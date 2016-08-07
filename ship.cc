@@ -1320,7 +1320,7 @@ void ship::load()
 
 	if(hul==-1)
 		hul=mhul;
-	ply=false;
+	ply=NULL;
 
 	mov.xx=0;
 	mov.yy=0;
