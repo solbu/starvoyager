@@ -6,8 +6,7 @@
 	If that file is not included with this source then permission is not given to use this source in any way whatsoever.
 */
 
-struct SDL_Surface;
-struct SDL_Rect;
+#include <SDL_video.h>
 
 struct sbox //Bounding box on screen
 {

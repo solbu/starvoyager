@@ -6,7 +6,7 @@
 	If that file is not included with this source then permission is not given to use this source in any way whatsoever.
 */
 
-
+#include <SDL_audio.h>
 class sound;
 
 struct channel //Used to represent a virtual channel for mixing
@@ -16,7 +16,6 @@ struct channel //Used to represent a virtual channel for mixing
 	int div; //Div factor for each sound
 };
 
-struct SDL_AudioSpec;
 
 class sound //A sound in the database
 {
