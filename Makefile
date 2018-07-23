@@ -21,7 +21,7 @@ all: starvoyager
 
 #Linking
 starvoyager: alliance.o camera.o database.o error.o game.o interface.o presence.o ship.o sound.o ticker.o calc.o client.o equip.o frag.o graphic.o planet.o server.o sockhelper.o sv.o player.o os.o SDL_rotozoom.o SDL_gfxPrimitives.o
-	$(CC) -o starvoyager *.o $(LIBS)
+	$(CC) -o starvoyager $^ $(LIBS)
 
 #Include dependencies
 *.o: *.h
