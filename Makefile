@@ -1,13 +1,18 @@
-PREFIX=/usr/local
-DATADIR=$(PREFIX)/share/starvoyager
+PREFIX=$(DESTDIR)/usr
+DATADIR=$(PREFIX)/share/games/starvoyager
 DOCDIR=$(PREFIX)/share/doc/starvoyager
-BINDIR=$(PREFIX)/bin
+BINDIR=$(PREFIX)/games
 VERSION=0.4.4
 
 CPPC=c++
 CC=cc
 LIBS:=`sdl-config --libs` -lSDL_net -lstdc++
 CFLAGS:=`sdl-config --cflags` -Wall -ggdb3
+ifneq (,$(findstring noopt,$(DEB_BUILD_OPTIONS)))
+CFLAGS += -O0
+else
+CFLAGS += -O2
+endif
 #CFLAGS:=`sdl-config --cflags` -ggdb3 -Wall -Werror -ansi -pedantic
 PACKAGENAME=starvoyager-$(VERSION)-`uname -m`-`uname|tr [A-Z] [a-z]`.bin
 .SUFFIXES: .c .cc
@@ -33,15 +38,22 @@ SDL_gfxPrimitives.o: SDL_gfxPrimitives.c
 
 	
 #Installing
-install: all
+install:  install-data install-bin
+
+
+install-data: all
 	rm $(DATADIR) -rf
 	rm $(DOCDIR) -rf
-	mkdir -p $(BINDIR) $(DOCDIR) $(DATADIR)/gfx $(DATADIR)/snd 
+	mkdir -p $(DOCDIR) $(DATADIR)/gfx $(DATADIR)/snd 
 	cp data/gfx/* $(DATADIR)/gfx/
 	cp data/snd/* $(DATADIR)/snd/
 	cp data/*.svd $(DATADIR)/
-	cp README FAQ LGPL manual.html LICENCE $(DOCDIR)/
+
+install-bin: all
+	rm $(DOCDIR) -rf
+	mkdir -p $(BINDIR) $(DOCDIR)
 	cp starvoyager $(BINDIR)/
+	cp README FAQ manual.html $(DOCDIR)/
 	chmod 755 $(BINDIR)/starvoyager
 
 #Uninstalling
