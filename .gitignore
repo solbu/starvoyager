@@ -3,3 +3,4 @@ autom4te.cache/
 *.log
 *.o
 starvoyager
+*.tar.gz
