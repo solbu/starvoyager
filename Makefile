@@ -2,7 +2,7 @@ PREFIX=$(DESTDIR)/usr
 DATADIR=$(PREFIX)/share/games/starvoyager
 DOCDIR=$(PREFIX)/share/doc/starvoyager
 BINDIR=$(PREFIX)/games
-VERSION=0.4.4
+VERSION=0.5.0
 
 CPPC=c++
 CC=cc
