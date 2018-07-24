@@ -1,3 +1,9 @@
+0.5.0 2018-07-24  Johnny A. Solbu <johnny@solbu.net>
+
+	* Applied all Debian patches, except for the hardening patch
+	* Fix Makefile: Check for «x86_64» processor and if so, enable «-lm»
+	* Add «-v» option, print the verison and exit
+
 Version 0.4.4
 
 Total freeze bug (in network code; local as well as remote) fixed
