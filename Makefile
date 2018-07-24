@@ -2,6 +2,7 @@ PREFIX=$(DESTDIR)/usr
 DATADIR=$(PREFIX)/share/games/starvoyager
 DOCDIR=$(PREFIX)/share/doc/starvoyager
 BINDIR=$(PREFIX)/games
+NAME=starvoyager
 VERSION=0.5.0
 
 CPPC=c++
@@ -19,14 +20,14 @@ else
 CFLAGS += -O2
 endif
 #CFLAGS:=`sdl-config --cflags` -ggdb3 -Wall -Werror -ansi -pedantic
-PACKAGENAME=starvoyager-$(VERSION)-`uname -m`-`uname|tr [A-Z] [a-z]`.bin
+PACKAGENAME=$(NAME)-$(VERSION)-`uname -m`-`uname|tr [A-Z] [a-z]`.bin
 .SUFFIXES: .c .cc
 
 all: starvoyager
 
 #Linking
 starvoyager: alliance.o camera.o database.o error.o game.o interface.o presence.o ship.o sound.o ticker.o calc.o client.o equip.o frag.o graphic.o planet.o server.o sockhelper.o sv.o player.o os.o SDL_rotozoom.o SDL_gfxPrimitives.o
-	$(CC) -o starvoyager $^ $(LIBS)
+	$(CC) -o $(NAME) $^ $(LIBS)
 
 #Include dependencies
 *.o: *.h
@@ -57,23 +58,26 @@ install-data: all
 install-bin: all
 	rm $(DOCDIR) -rf
 	mkdir -p $(BINDIR) $(DOCDIR)
-	cp starvoyager $(BINDIR)/
+	cp $(NAME) $(BINDIR)/
 	cp README FAQ manual.html manual.txt $(DOCDIR)/
-	chmod 755 $(BINDIR)/starvoyager
+	chmod 755 $(BINDIR)/$(NAME)
 
 #Uninstalling
 uninstall:
 	rm -r $(DATADIR)
 	rm -r $(DOCDIR)
-	rm $(BINDIR)/starvoyager
+	rm $(BINDIR)/$(NAME)
 
 #Clean
 clean:
 	rm -f *.o
-	rm -f starvoyager
-	rm -f starvoyager-*
+	rm -f $(NAME)
+	rm -f $(NAME)-*
 
 #Making a binary package
 binary:
 	cp binpackage.sh $(PACKAGENAME)
-	tar czf - $(BINDIR)/starvoyager $(DATADIR) $(DOCDIR) >>$(PACKAGENAME)
+	tar czf - $(BINDIR)/$(NAME) $(DATADIR) $(DOCDIR) >>$(PACKAGENAME)
+
+dist:
+	git archive --prefix=$(NAME)-${VERSION}/ HEAD -o $(NAME)-${VERSION}.tar.gz
