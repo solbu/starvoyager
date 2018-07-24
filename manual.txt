@@ -1,4 +1,4 @@
-                  Star Voyager flight manual (version 0.4.4)
+                  Star Voyager flight manual (version 0.5.0)
 
 
     * Starting a game
