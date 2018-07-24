@@ -6,7 +6,12 @@ VERSION=0.4.4
 
 CPPC=c++
 CC=cc
-LIBS:=`sdl-config --libs` -lSDL_net -lstdc++
+UNAME := $(shell uname -m)
+ifeq ($(UNAME), x86_64)
+	LIBS:=`sdl-config --libs` -lSDL_net -lstdc++ -lm
+else
+	LIBS:=`sdl-config --libs` -lSDL_net -lstdc++
+endif
 CFLAGS:=`sdl-config --cflags` -Wall -ggdb3
 ifneq (,$(findstring noopt,$(DEB_BUILD_OPTIONS)))
 CFLAGS += -O0
