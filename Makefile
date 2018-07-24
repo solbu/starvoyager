@@ -58,7 +58,7 @@ install-bin: all
 	rm $(DOCDIR) -rf
 	mkdir -p $(BINDIR) $(DOCDIR)
 	cp starvoyager $(BINDIR)/
-	cp README FAQ manual.html $(DOCDIR)/
+	cp README FAQ manual.html manual.txt $(DOCDIR)/
 	chmod 755 $(BINDIR)/starvoyager
 
 #Uninstalling
