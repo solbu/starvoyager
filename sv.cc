@@ -71,8 +71,13 @@ int main(int argc,char* argv[])
 			{
 				switch(argv[i][1])
 				{
+					case 'v':
+					printf("Star Voyager %s\n",VERSION);
+					exit(0);
+					break;
+
 					case 'h':
-					printf("Star Voyager %s\n\n-h	Command line help\n-f	Fullscreen mode\n-x	Run in extra-large window\n-s	Run as standalone server\n",VERSION);
+					printf("Star Voyager %s\n\n-v	Print version and exit\n-h	Command line help\n-f	Fullscreen mode\n-x	Run in extra-large window\n-s	Run as standalone server\n",VERSION);
 					exit(0);
 					break;
 
