@@ -6,7 +6,7 @@
 	If that file is not included with this source then permission is not given to use this source in any way whatsoever.
 */
 
-#include <string.h>
+#include <cstring>
 #include "calc.h"
 #include "sockhelper.h"
 #include "protocol.h"
@@ -29,12 +29,20 @@ void client::stop()
 {
 	if(sock)
 	{
-		SDLNet_TCP_Close(sock);
+		try {
+			SDLNet_TCP_Close(sock);
+		} catch(...) {
+			// Ignore socket close errors during cleanup
+		}
 		sock=NULL;
 	}
 	if(hlpr)
 	{
-		delete hlpr;
+		try {
+			delete hlpr;
+		} catch(...) {
+			// Ignore helper deletion errors during cleanup
+		}
 		hlpr=NULL;
 	}
 }
@@ -303,7 +311,7 @@ void client::readln()
 	if(interface::getline(txt,hide))
 	{
 		edit=false;
-		for(int i=0;i<65;i++)
+		for(int i=0;i<64;i++)
 		{
 			action(CLIENT_CHAR,txt[i]);
 			if(txt[i]=='\0')

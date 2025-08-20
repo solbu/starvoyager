@@ -237,7 +237,8 @@ bool interface::getline(char* put,bool hide)
 	}
 	if(ent)
 	{
-		strcpy(put,edit);
+		strncpy(put,edit,64);
+		put[64]='\0';
 		inp=false;
 		ent=false;
 		return true;

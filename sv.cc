@@ -8,9 +8,9 @@
 
 #include <SDL.h>
 #include <SDL_net.h>
-#include <signal.h>
-#include <string.h>
-#include <stdlib.h>
+#include <csignal>
+#include <cstring>
+#include <cstdlib>
 #include "calc.h"
 #include "graphic.h"
 #include "ship.h"
@@ -96,11 +96,11 @@ int main(int argc,char* argv[])
 			}
 		}
 
-		sprintf(path,"%s/ships.svd",DATADIR);
+		snprintf(path,sizeof(path),"%s/ships.svd",DATADIR);
 		database::openreader(fopen(path,"r"));
-		sprintf(path,"%s/equip.svd",DATADIR);
+		snprintf(path,sizeof(path),"%s/equip.svd",DATADIR);
 		database::openreader(fopen(path,"r"));
-		sprintf(path,"%s/alliances.svd",DATADIR);
+		snprintf(path,sizeof(path),"%s/alliances.svd",DATADIR);
 		database::openreader(fopen(path,"r"));
 
 		equip::loadlib();
