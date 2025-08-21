@@ -4,6 +4,7 @@
 
 * Try and add autotools (Makefile.am, configure.ac) so it compiles on any 32/64 bit system without having to resort to hacking the Makefile every time.
 * Find out how to increase the screen size.
+* Review Debian packages SDL_gfx as libsdl-gfx1.2 (runtime) and libsdl-gfx1.2-dev (development headers and static library) to replace local copies of SDL_Gfx files
 
 ## Long term
 

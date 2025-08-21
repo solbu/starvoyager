@@ -122,11 +122,11 @@ void game::runlocal()
 			if(frame_counter>=frame_drop_rate)
 			{
 				frame_counter-=frame_drop_rate;
+				graphic::clean();
 				camera::render();
 				interface::render();
 				presence::render();
 				graphic::blit();
-				graphic::clean();
 			}
 			ship::simulateall();
 			frag::simulateall();
@@ -182,11 +182,11 @@ void game::runclient(char* host)
 			if(frame_counter>=frame_drop_rate)
 			{
 				frame_counter-=frame_drop_rate;
+				graphic::clean();
 				camera::render();
 				interface::render();
 				presence::render();
 				graphic::blit();
-				graphic::clean();
 			}
 			if(lreg.afps<23)
 				frame_drop_rate++;

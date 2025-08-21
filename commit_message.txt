@@ -1,0 +1,14 @@
+Update to latest SDL_gfx library and fix color format compatibility
+
+- Updated SDL_gfx library to latest version from https://github.com/ferzkopp/SDL_gfx
+- Added missing SDL_gfxBlitFunc.c compilation to Makefile to resolve GFX_ALPHA_ADJUST_ARRAY undefined reference
+- Fixed color format compatibility: new SDL_gfx expects RGBA format (0xRRGGBBAA) instead of surface-mapped colors
+- Convert SDL_MapRGB colors to RGBA format in pixelColor() and lineColor() calls using SDL_GetRGB()
+- Resolves trailing artifacts behind stars during ship movement caused by API changes
+
+Files modified:
+- Makefile: Added SDL_gfxBlitFunc.o to build dependencies
+- graphic.cc: Updated pixelColor/lineColor calls to use RGBA color format
+- SDL_gfxPrimitives.h/c: Updated to latest version
+- SDL_gfxBlitFunc.h/c: Added from latest SDL_gfx
+- SDL_rotozoom.h/c: Updated to latest version

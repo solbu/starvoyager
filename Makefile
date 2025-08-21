@@ -26,7 +26,7 @@ PACKAGENAME=$(NAME)-$(VERSION)-`uname -m`-`uname|tr [A-Z] [a-z]`.bin
 all: starvoyager
 
 #Linking
-starvoyager: alliance.o camera.o database.o error.o game.o interface.o presence.o ship.o sound.o ticker.o calc.o client.o equip.o frag.o graphic.o planet.o server.o sockhelper.o sv.o player.o os.o SDL_rotozoom.o SDL_gfxPrimitives.o
+starvoyager: alliance.o camera.o database.o error.o game.o interface.o presence.o ship.o sound.o ticker.o calc.o client.o equip.o frag.o graphic.o planet.o server.o sockhelper.o sv.o player.o os.o SDL_rotozoom.o SDL_gfxPrimitives.o SDL_gfxBlitFunc.o
 	$(CC) -o $(NAME) $^ $(LIBS)
 
 #Include dependencies
@@ -38,6 +38,9 @@ SDL_rotozoom.o: SDL_rotozoom.c
 
 SDL_gfxPrimitives.o: SDL_gfxPrimitives.c
 	$(CC) $(CFLAGS) -c -o SDL_gfxPrimitives.o SDL_gfxPrimitives.c
+
+SDL_gfxBlitFunc.o: SDL_gfxBlitFunc.c
+	$(CC) $(CFLAGS) -c -o SDL_gfxBlitFunc.o SDL_gfxBlitFunc.c
 
 .cc.o:
 	$(CPPC) $(CFLAGS) -DPOSIX -DVERSION=\"${VERSION}\" -DDATADIR=\"${DATADIR}\" -c -o $@ $<
