@@ -57,6 +57,7 @@ void server::start(bool locg)
 	lstn=SDLNet_TCP_Open(&serv);
 	if(!lstn)
 		throw error("Can't open listening socket");
+	// fprintf(logf,"%s: Server started listening on port %d\n",os::gettime(),(int)PORT);
 	fprintf(logf,"%s: Server started listening on port %hd\n",os::gettime(),PORT);
 	fflush(logf);
 	server::locg=locg;
@@ -210,6 +211,7 @@ void server::bulletin(char* fmt,...)
 			int k=0;
 			for(int j=0; j<131 && buf[j]!='\0'; j++)
 			{
+				// if(buf[j]>=32 && buf[j]<=126 && buf[j]!='\n' && buf[j]!='\r')
 				if(buf[j]>=32 && buf[j]<=126 || buf[j]==' ')
 					sanitized_bulletin[k++] = buf[j];
 			}
@@ -1044,7 +1046,8 @@ void server::input()
 		}
 		catch(error it)
 		{
-			ply=NULL;	
+			ply=NULL;
+			// log("%s", it.str);
 			log(it.str);
 			printtomesg(it.str);
 			changecmod(CMOD_NAME);
