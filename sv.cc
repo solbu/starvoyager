@@ -97,11 +97,19 @@ int main(int argc,char* argv[])
 		}
 
 		snprintf(path,sizeof(path),"%s/ships.svd",DATADIR);
-		database::openreader(fopen(path,"r"));
+		FILE* ships_file = fopen(path,"r");
+		if(!ships_file) throw error("Cannot open ships.svd");
+		database::openreader(ships_file);
+		
 		snprintf(path,sizeof(path),"%s/equip.svd",DATADIR);
-		database::openreader(fopen(path,"r"));
+		FILE* equip_file = fopen(path,"r");
+		if(!equip_file) throw error("Cannot open equip.svd");
+		database::openreader(equip_file);
+		
 		snprintf(path,sizeof(path),"%s/alliances.svd",DATADIR);
-		database::openreader(fopen(path,"r"));
+		FILE* alliances_file = fopen(path,"r");
+		if(!alliances_file) throw error("Cannot open alliances.svd");
+		database::openreader(alliances_file);
 
 		equip::loadlib();
 		ship::loadlib();

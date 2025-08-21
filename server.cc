@@ -205,8 +205,17 @@ void server::bulletin(char* fmt,...)
 			if(connections[i])
 				connections[i]->printtomesg("%s",buf);
 		
-  // amazonq-ignore-next-line
-		fprintf(logf,"%s: Bulletin - %s\n",os::gettime(),buf);
+		{
+			char sanitized_bulletin[132];
+			int k=0;
+			for(int j=0; j<131 && buf[j]!='\0'; j++)
+			{
+				if(buf[j]>=32 && buf[j]<=126 || buf[j]==' ')
+					sanitized_bulletin[k++] = buf[j];
+			}
+			sanitized_bulletin[k] = '\0';
+			fprintf(logf,"%s: Bulletin - %s\n",os::gettime(),sanitized_bulletin);
+		}
 		fflush(logf);
 	}
 }
@@ -224,7 +233,8 @@ void server::registernoise(ship* fr,int snd)
 		if(connections[i] && connections[i]->ply && connections[i]->ply->in && connections[i]->lsnd!=snd && connections[i]->ply->in->see(fr))
 		{	
 			connections[i]->lsnd=snd;	
-			connections[i]->hlpr->send(buf,SERV_NOISE_SZ);
+			if(connections[i]->hlpr)
+				connections[i]->hlpr->send(buf,SERV_NOISE_SZ);
 		}
 	}
 }
@@ -240,7 +250,8 @@ void server::registersound(ship* to,int snd)
 			connections[i]->lsnd=snd;
 			buf[0]=SERV_SND;
 			calc::inttodat(snd,buf+1);
-			connections[i]->hlpr->send(buf,SERV_SND_SZ);
+			if(connections[i]->hlpr)
+				connections[i]->hlpr->send(buf,SERV_SND_SZ);
 		}
 
 	}
@@ -256,7 +267,8 @@ void server::registershake(ship* to,int mag)
 		{
 			buf[0]=SERV_SHAKE;
 			calc::inttodat(mag,buf+1);
-			connections[i]->hlpr->send(buf,SERV_SHAKE_SZ);
+			if(connections[i]->hlpr)
+				connections[i]->hlpr->send(buf,SERV_SHAKE_SZ);
 		}
 
 	}
@@ -976,7 +988,7 @@ void server::input()
 			throw error("Aborted name entry");
 		try
 		{
-			if(strlen(inpb)<2)
+			if(inpb[0]=='\0' || inpb[1]=='\0')
 			{
 				inpb[0]='\0';
 				throw error("Name too short");
@@ -1089,7 +1101,17 @@ void server::input()
 		break;
 
 		case CMOD_KICK:
-		log("Attemped kick of %s",inpb);
+		{
+			char sanitized_name[65];
+			int k=0;
+			for(int j=0; j<64 && inpb[j]!='\0'; j++)
+			{
+				if(inpb[j]>=32 && inpb[j]<=126 && inpb[j]!='\n' && inpb[j]!='\r')
+					sanitized_name[k++] = inpb[j];
+			}
+			sanitized_name[k] = '\0';
+			log("Attemped kick of %s",sanitized_name);
+		}
 		for(int i=0;i<ISIZE;i++)
 		{
 			if(connections[i] && connections[i]!=this && connections[i]->ply && strcmp(inpb,connections[i]->ply->nam)==0)
@@ -1103,7 +1125,17 @@ void server::input()
 		break;
 		
 		case CMOD_DELETE:
-		log("Attemped deletion of %s",inpb);
+		{
+			char sanitized_name[65];
+			int k=0;
+			for(int j=0; j<64 && inpb[j]!='\0'; j++)
+			{
+				if(inpb[j]>=32 && inpb[j]<=126 && inpb[j]!='\n' && inpb[j]!='\r')
+					sanitized_name[k++] = inpb[j];
+			}
+			sanitized_name[k] = '\0';
+			log("Attemped deletion of %s",sanitized_name);
+		}
  		for(int i=0;i<ISIZE;i++)
 		{
 			if(connections[i] && connections[i]!=this && connections[i]->ply && strcmp(inpb,connections[i]->ply->nam)==0)
@@ -1139,9 +1171,10 @@ void server::printtocons(char* fmt,...)
 	}
 
 	buf[0]=SERV_CONS;
-	calc::inttodat(strlen((char*)buf+3),buf+1);
+	calc::inttodat(len,buf+1);
 
-	hlpr->send(buf,strlen((char*)buf+3)+3);
+	if(hlpr)
+		hlpr->send(buf,len+3);
 }
 
 void server::spritetocons(int indx)
@@ -1171,9 +1204,10 @@ void server::printtomesg(char* fmt,...)
 		}
 
 		buf[0]=SERV_MESG;
-		calc::inttodat(strlen((char*)buf+3),buf+1);
+		calc::inttodat(len,buf+1);
 
-		hlpr->send(buf,strlen((char*)buf+3)+3);
+		if(hlpr)
+			hlpr->send(buf,len+3);
 	}
 }
 
