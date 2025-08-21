@@ -974,7 +974,8 @@ void server::requestline(bool hide)
 
 	buf[0]=SERV_READLN;
 	buf[1]=(unsigned char)hide;
-	hlpr->send(buf,SERV_READLN_SZ);
+	if(hlpr)
+		hlpr->send(buf,SERV_READLN_SZ);
 }
 
 void server::input()
@@ -1181,7 +1182,7 @@ void server::spritetocons(int indx)
 {
 	unsigned char buf[SERV_CSPR_SZ]; //Outgoing buffer
 
-	if(indx>=0)
+	if(indx>=0 && hlpr)
 	{
 		buf[0]=SERV_CSPR;
 		calc::inttodat(indx,buf+1);
@@ -1217,6 +1218,7 @@ void server::uploads()
 
 	if(ply && ply->in)
 	{
+		if(!hlpr) return;
 		ply->in->netout(SERV_SELF,buf);
 		hlpr->send(buf,SERV_SELF_SZ);
 		calc::inttodat(foc,buf+21);
@@ -1248,6 +1250,7 @@ void server::uploadplanets()
 	unsigned char buf[256]; //Outgoing scratchpad buffer to use
 	planet* tpln; //Concerned planet
 
+	if(!hlpr) return;
 	for(int i=0;i<planet::ISIZE;i++)
 	{
 		tpln=planet::get(i);
@@ -1295,6 +1298,7 @@ void server::uploadships()
 	unsigned char buf[256]; //Outgoing scratchpad buffer to use
 	ship* tshp; //Concerned ship
 
+	if(!hlpr) return;
 	for(int i=0;i<ship::ISIZE;i++)
 	{
 		tshp=ship::get(i);
@@ -1347,6 +1351,7 @@ void server::uploadfrags()
 	unsigned char buf[256]; //Outgoing scratchpad buffer to use
 	frag* tfrg; //Concerned frag
 
+	if(!hlpr) return;
 	for(int i=0;i<frag::ISIZE;i++)
 	{
 		tfrg=frag::get(i);
@@ -1403,7 +1408,8 @@ void server::kill()
 		uploadfrags();
 		buf[0]=SERV_DEL;
 		calc::inttodat(ship2pres(ply->in->self),buf+1);
-		hlpr->send(buf,SERV_DEL_SZ);
+		if(hlpr)
+			hlpr->send(buf,SERV_DEL_SZ);
 		printtomesg("You have been destroyed: Game Over");
 		printtocons("Game over");
 	}
@@ -1417,7 +1423,7 @@ void server::hilight(ship* tshp)
 {
 	unsigned char buf[SERV_HILIGHT_SZ]; //Buffer for sending hilight information
 
-	if(tshp)
+	if(tshp && hlpr)
 	{
 		buf[0]=SERV_HILIGHT;
 		calc::inttodat(ship2pres(tshp->self),buf+1);
