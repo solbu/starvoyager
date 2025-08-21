@@ -221,6 +221,8 @@ void player::commit()
 		delete mshp;
 		mshp=NULL;
 	}
+	if(mshp)
+		delete mshp;
 	mshp=new ship();
 	*mshp=*in;
 	mshp->self=-1;
