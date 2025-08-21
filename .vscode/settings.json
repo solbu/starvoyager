@@ -1,0 +1,14 @@
+{
+    "makefile.launchConfigurations": [
+        {
+            "cwd": "/home/mcgarrah/github/starvoyager",
+            "binaryPath": "/home/mcgarrah/github/starvoyager/starvoyager",
+            "binaryArgs": []
+        }
+    ],
+    "C_Cpp.default.configurationProvider": "ms-vscode.makefile-tools",
+    "files.associations": {
+        "*.h": "c",
+        "*.cc": "cpp"
+    }
+}
