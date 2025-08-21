@@ -33,15 +33,15 @@ starvoyager: alliance.o camera.o database.o error.o game.o interface.o presence.
 #Include dependencies
 # More specific dependency rules would go here if needed
 
-#Compiling
+#Compiling SDL_gfx files without warnings
 SDL_rotozoom.o: SDL_rotozoom.c
-	$(CC) $(CFLAGS) -c -o SDL_rotozoom.o SDL_rotozoom.c
+	$(CC) `sdl-config --cflags` -w -c -o SDL_rotozoom.o SDL_rotozoom.c
 
 SDL_gfxPrimitives.o: SDL_gfxPrimitives.c
-	$(CC) $(CFLAGS) -c -o SDL_gfxPrimitives.o SDL_gfxPrimitives.c
+	$(CC) `sdl-config --cflags` -w -c -o SDL_gfxPrimitives.o SDL_gfxPrimitives.c
 
 SDL_gfxBlitFunc.o: SDL_gfxBlitFunc.c
-	$(CC) $(CFLAGS) -c -o SDL_gfxBlitFunc.o SDL_gfxBlitFunc.c
+	$(CC) `sdl-config --cflags` -w -c -o SDL_gfxBlitFunc.o SDL_gfxBlitFunc.c
 
 .cc.o:
 	$(CPPC) $(CFLAGS) -DPOSIX -DVERSION=\"${VERSION}\" -DDATADIR=\"${DATADIR}\" -c -o $@ $<

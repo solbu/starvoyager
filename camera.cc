@@ -163,7 +163,7 @@ box camera::cov;
 
 void camera::rendermainview()
 {
-	char txt[33]; //For rendering distance on the pointer
+	char txt[50]; //For rendering distance on the pointer
 	presence* tprs; //Pointer to objects to draw
 	int cx,cy; //Centering screen position
 	long sx,sy; //Screen co-ordinates
@@ -266,7 +266,7 @@ void camera::renderradar()
 {
 	long sx,sy; //Screen co-ordinates
 	presence* tprs; //Pointer to objects to draw
-	char txt[33]; //For rendering co-ordinates on radar
+	char txt[50]; //For rendering co-ordinates on radar
 	int col = graphic::WHITE; //Color to use on radar
 	sbox tbox; //Target drawing box
 	ipol pdir;
