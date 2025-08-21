@@ -47,6 +47,10 @@ ship::ship()
 {
 	self=-1;
 	ply=NULL;
+	memset(cls, 0, sizeof(cls));
+	memset(slots, 0, sizeof(slots));
+	for(int i=0;i<32;i++)
+		slots[i].pos.rad=-1;
 }
 
 ship::~ship()
@@ -1300,22 +1304,37 @@ void ship::load()
 	esel=-1;
 	for(int i=0;i<32;i++)
 	{
-		sprintf(atsc,"Slot%hdAngle",i);
-		slots[i].pos.ang=database::getvalue(atsc);
-		sprintf(atsc,"Slot%hdRadius",i);
-		slots[i].pos.rad=database::getvalue(atsc);
-		sprintf(atsc,"Slot%hdFace",i);
-		slots[i].face=database::getvalue(atsc);
-		if(slots[i].face==-1)
-			slots[i].face=slots[i].pos.ang;
-		sprintf(atsc,"Slot%hdItem",i);
-		slots[i].item=equip::get(database::getvalue(atsc));
-		sprintf(atsc,"Slot%hdReadiness",i);
-		slots[i].rdy=database::getvalue(atsc);
-		sprintf(atsc,"Slot%hdCapacity",i);
-		slots[i].cap=database::getvalue(atsc);
-		if(slots[i].cap==-1 && slots[i].item)
-			slots[i].cap=slots[i].item->cap;
+		// Initialize slot to safe defaults
+		slots[i].pos.ang=0;
+		slots[i].pos.rad=-1;
+		slots[i].face=0;
+		slots[i].item=NULL;
+		slots[i].rdy=0;
+		slots[i].cap=0;
+		
+		try {
+			sprintf(atsc,"Slot%hdAngle",i);
+			slots[i].pos.ang=database::getvalue(atsc);
+			sprintf(atsc,"Slot%hdRadius",i);
+			slots[i].pos.rad=database::getvalue(atsc);
+			sprintf(atsc,"Slot%hdFace",i);
+			slots[i].face=database::getvalue(atsc);
+			if(slots[i].face==-1)
+				slots[i].face=slots[i].pos.ang;
+			sprintf(atsc,"Slot%hdItem",i);
+			long item_id = database::getvalue(atsc);
+			if(item_id >= 0) {
+				slots[i].item=equip::get(item_id);
+			}
+			sprintf(atsc,"Slot%hdReadiness",i);
+			slots[i].rdy=database::getvalue(atsc);
+			sprintf(atsc,"Slot%hdCapacity",i);
+			slots[i].cap=database::getvalue(atsc);
+			if(slots[i].cap==-1 && slots[i].item)
+				slots[i].cap=slots[i].item->cap;
+		} catch(...) {
+			// If loading fails, leave slot in safe default state
+		}
 	}
 
 	if(hul==-1)

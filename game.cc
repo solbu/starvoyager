@@ -223,6 +223,15 @@ void game::load()
 	FILE* f = os::openpersonal("universe.svd","r");
 	if(!f)
 		throw error("Cannot open universe.svd for reading");
+	// Check if file is empty or too small to be valid
+	fseek(f, 0, SEEK_END);
+	long size = ftell(f);
+	fseek(f, 0, SEEK_SET);
+	if(size < 10) // Minimum size for a valid database file
+	{
+		fclose(f);
+		throw error("Universe file is too small or empty");
+	}
 	database::openreader(f);
 	planet::loadall();
 	ship::loadall();
