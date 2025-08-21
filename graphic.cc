@@ -236,7 +236,7 @@ void graphic::draw(int x,short y,short rot,short zout,short haze,bool trg)
 
 	if(miss)
 	{
-		string("Graphic missing",x,y,true);
+		string(const_cast<char*>("Graphic missing"),x,y,true);
 	}
 	else
 	{
@@ -290,9 +290,6 @@ void graphic::embed()
 
 void graphic::clean()
 {
-	int j; //Loop limiter
-
-	j=nd;
 	SDL_SetClipRect(screen,NULL);
 	for(int i=0;i<nd;i++)
 	{

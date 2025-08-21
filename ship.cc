@@ -255,11 +255,12 @@ void ship::accel(int dir,bool wrp)
 			nsp=vel.rad+awp;
 		if(dir==-1)
 			nsp=vel.rad-awp;
-		if(nsp<100)
+		if(nsp<100) {
 			if(wrp)
 				nsp=mip;
 			else
 				nsp=100;
+		}
 	}
 	//Handle acceleration if currently at impulse
 	//if(vel.rad<=mip)
@@ -646,16 +647,18 @@ int ship::interact(char* txt,short cmod,short opr,ship* mshp)
 			txt+=sprintf(txt,"\n[3] Select equipment\n");
 			txt+=sprintf(txt,"[4] Jettison selection\n");
 		}
-		if(opr==1)
+		if(opr==1) {
 			if(shd && shd->rdy==-1)
 				shieldsup();
 			else
 				shieldsdown();
-		if(opr==2)
+		}
+		if(opr==2) {
 			if(clk && clk->rdy==-1)
 				cloak();
 			else
 				uncloak();
+		}
 		if(opr==3)
 		{
 			for(int i=0,j=esel+1;i<32;i++,j++)
@@ -1889,11 +1892,12 @@ void ship::behave()
 				if(calc::rnd(10)==0)
 					enem=NULL;
 			}
-			if(!enem)
+			if(!enem) {
 				if(frnd && frnd->enem)
 					enem=frnd->enem;
 				else
 					enem=pickhostile();
+		}
 			if(frnd)
 			{
 				if(frnd->clk && frnd->clk->cap!=0)
