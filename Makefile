@@ -22,6 +22,7 @@ endif
 #CFLAGS:=`sdl-config --cflags` -ggdb3 -Wall -Werror -ansi -pedantic
 PACKAGENAME=$(NAME)-$(VERSION)-`uname -m`-`uname|tr [A-Z] [a-z]`.bin
 .SUFFIXES: .c .cc
+.PHONY: all clean install install-data install-bin uninstall binary dist
 
 all: starvoyager
 
@@ -30,7 +31,7 @@ starvoyager: alliance.o camera.o database.o error.o game.o interface.o presence.
 	$(CC) -o $(NAME) $^ $(LIBS)
 
 #Include dependencies
-*.o: *.h
+# More specific dependency rules would go here if needed
 
 #Compiling
 SDL_rotozoom.o: SDL_rotozoom.c
@@ -59,7 +60,6 @@ install-data: all
 	cp data/*.svd $(DATADIR)/
 
 install-bin: all
-	rm $(DOCDIR) -rf
 	mkdir -p $(BINDIR) $(DOCDIR)
 	cp $(NAME) $(BINDIR)/
 	cp README FAQ manual.html manual.txt $(DOCDIR)/
