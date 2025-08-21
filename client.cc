@@ -57,7 +57,13 @@ void client::connect(char* host)
 	sock=SDLNet_TCP_Open(&serv);
 	if(!sock)
 		throw error("Could not connect to server");
-	hlpr=new sockhelper(sock);
+	try {
+		hlpr=new sockhelper(sock);
+	} catch(...) {
+		SDLNet_TCP_Close(sock);
+		sock=NULL;
+		throw error("Failed to create socket helper");
+	}
 	hlpr->send((unsigned char*)SIGN,strlen(SIGN));
 	btck=0;
 }
@@ -254,6 +260,8 @@ void client::poll()
 					interface::printtomesg("%s",txt);
 					hlpr->suck();
 				}
+				else
+					exl=true;
 			}
 			else
 				exl=true;

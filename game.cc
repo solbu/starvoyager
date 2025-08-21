@@ -6,6 +6,7 @@
 	If that file is not included with this source then permission is not given to use this source in any way whatsoever.
 */
 
+#include <csignal>
 #include <stdio.h>
 
 #include "alliance.h"
@@ -26,11 +27,20 @@
 #include "ship.h"
 #include "ticker.h"
 
+static volatile bool shutdown_requested = false;
+
+static void signal_handler(int sig) {
+	shutdown_requested = true;
+}
+
 void game::runheadless() //Run as a headless server
 {
 	ticker lreg(24); //Loop regulator
 	int sdly; //Game saving delay
 
+	signal(SIGINT, signal_handler);
+	signal(SIGTERM, signal_handler);
+	
 	sdly=0;
 	lreg.start();
 	try
@@ -44,7 +54,7 @@ void game::runheadless() //Run as a headless server
 		{
 			alliance::maketerritories();
 		}
-		while(true)
+		while(!shutdown_requested)
 		{
 			server::cycle();
 			ship::simulateall();
@@ -59,6 +69,8 @@ void game::runheadless() //Run as a headless server
 			}
 			sdly--;
 		}
+		if(shutdown_requested)
+			throw error("Server shutdown requested");
 	}
 	catch(error it)
 	{

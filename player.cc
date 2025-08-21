@@ -27,7 +27,7 @@ player::player()
 player::player(char* nam)
 {
 	self=-1;
-	nam[32]='\0';
+	if(strlen(nam) > 32) nam[32]='\0';
 	for(int i=0;i<ISIZE && self==-1;i++)
 	{
 		if(!players[i])
@@ -36,7 +36,7 @@ player::player(char* nam)
 	if(self==-1)
 		throw error("No more space for new accounts");
 	players[self]=this;
-	sprintf(this->nam,"%s",nam);
+	snprintf(this->nam,sizeof(this->nam),"%s",nam);
 	pass[0]='\0';
 	in=NULL;
 	if(self==0)
@@ -84,7 +84,7 @@ void player::saveall()
 	{
 		if(players[i] && players[i]->mshp)
 		{
-			sprintf(obsc,"Account%hd",i);
+			snprintf(obsc,sizeof(obsc),"Account%hd",i);
 			database::putobject(obsc);
 			players[i]->save();
 		}
@@ -99,7 +99,7 @@ void player::loadall()
 	{
 		try
 		{
-			sprintf(obsc,"Account%hd",i);
+			snprintf(obsc,sizeof(obsc),"Account%hd",i);
 			database::switchobj(obsc);
 			players[i]=new player();
 			players[i]->self=i;
@@ -154,7 +154,12 @@ void player::spawn(alliance* tali)
 		}
 		catch(error it)
 		{
+			if(mshp) {
+				delete mshp;
+				mshp=NULL;
+			}
 			delete in;
+			in=NULL;
 			throw it;
 		}
 	}
@@ -170,7 +175,7 @@ void player::login(char* pass)
 		throw error("No ship associated with this user");
 	if(pass)
 	{
-		pass[32]='\0';
+		if(strlen(pass) > 32) pass[32]='\0';
 		if(pass[0]=='\0')
 			throw error("Invalid password");
 		calc::obscure(pass);
@@ -195,7 +200,7 @@ void player::login(char* pass)
 
 void player::setpass(char* pass)
 {
-	sprintf(this->pass,"%s",pass);
+	snprintf(this->pass,sizeof(this->pass),"%s",pass);
 	calc::obscure(this->pass);
 }
 
@@ -208,6 +213,8 @@ void player::commit()
 		mshp->ply=NULL;
 		delete mshp;
 	}
+	if(mshp)
+		delete mshp;
 	mshp=new ship();
 	*mshp=*in;
 	mshp->self=-1;
@@ -233,7 +240,10 @@ void player::debit(long amt)
 
 void player::credit(long amt)
 {
-	cashi+=amt;
+	if(amt > 999999999 - cashi)
+		cashi = 999999999;
+	else
+		cashi+=amt;
 	if(cashi>999999999)
 		cashi=999999999;
 }
@@ -259,7 +269,8 @@ void player::save()
 	database::putvalue("Password",pass);
 	database::putvalue("Op",op);
 	database::putvalue("Cash",cash);
-	mshp->save();
+	if(mshp)
+		mshp->save();
 }
 
 void player::load()
@@ -269,6 +280,8 @@ void player::load()
 	database::getvalue("Password",pass);
 	op=database::getvalue("Op");
 	cash=database::getvalue("Cash");
+	if(mshp)
+		delete mshp;
 	mshp=new ship();
 	mshp->load();
 }
