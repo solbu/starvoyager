@@ -146,6 +146,34 @@ sudo make install
 
 ## Development
 
+### VS Code Debugging Setup
+
+The project includes a complete VS Code debugging configuration in the `.vscode/` directory:
+
+#### Files Included
+- `launch.json` - Debug configurations for client and server modes
+- `tasks.json` - Build, clean, and rebuild tasks
+- `c_cpp_properties.json` - IntelliSense configuration for SDL development
+- `settings.json` - Makefile tools integration
+
+#### Debug Configurations
+- **Debug StarVoyager** - Main game debugging
+- **Debug StarVoyager (Server)** - Server mode with `-s` flag
+
+#### Usage
+1. Open project in VS Code
+2. Set breakpoints by clicking line numbers
+3. Press `F5` to start debugging
+4. Choose configuration from dropdown
+5. Use `F10` (step over), `F11` (step into), `F5` (continue)
+
+#### Features
+- Automatic build before debugging
+- SDL graphics compatibility
+- Pretty-printing for variables
+- IntelliSense code completion
+- Multiple debug configurations
+
 ### Version History
 - **0.5.0** - Current version with Debian patches and build fixes
 - **0.4.x** - Network improvements and bug fixes

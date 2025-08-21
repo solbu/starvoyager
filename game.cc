@@ -122,11 +122,11 @@ void game::runlocal()
 			if(frame_counter>=frame_drop_rate)
 			{
 				frame_counter-=frame_drop_rate;
+				graphic::clean();
 				camera::render();
 				interface::render();
 				presence::render();
 				graphic::blit();
-				graphic::clean();
 			}
 			ship::simulateall();
 			frag::simulateall();
@@ -182,11 +182,11 @@ void game::runclient(char* host)
 			if(frame_counter>=frame_drop_rate)
 			{
 				frame_counter-=frame_drop_rate;
+				graphic::clean();
 				camera::render();
 				interface::render();
 				presence::render();
 				graphic::blit();
-				graphic::clean();
 			}
 			if(lreg.afps<23)
 				frame_drop_rate++;
@@ -223,6 +223,15 @@ void game::load()
 	FILE* f = os::openpersonal("universe.svd","r");
 	if(!f)
 		throw error("Cannot open universe.svd for reading");
+	// Check if file is empty or too small to be valid
+	fseek(f, 0, SEEK_END);
+	long size = ftell(f);
+	fseek(f, 0, SEEK_SET);
+	if(size < 10) // Minimum size for a valid database file
+	{
+		fclose(f);
+		throw error("Universe file is too small or empty");
+	}
 	database::openreader(f);
 	planet::loadall();
 	ship::loadall();

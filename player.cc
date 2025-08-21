@@ -21,6 +21,13 @@ long lcount=0;
 
 player::player()
 {
+	self=-1;
+	in=NULL;
+	mshp=NULL;
+	pass[0]='\0';
+	op=false;
+	cash=0;
+	cashi=0;
 	lcount++;
 }
 
@@ -279,10 +286,28 @@ void player::load()
 	database::getvalue("Password",pass);
 	op=database::getvalue("Op");
 	cash=database::getvalue("Cash");
+	// Safely delete existing ship if it exists
 	if(mshp)
+	{
+		mshp->ply=NULL;
 		delete mshp;
-	mshp=new ship();
-	mshp->load();
+	}
+	mshp=NULL;
+	// Create new ship and load its data
+	try {
+		mshp=new ship();
+		// Ensure ship doesn't point back to player during loading
+		mshp->ply=NULL;
+		mshp->load();
+		// Don't set mshp->ply here - it should remain NULL for saved ships
+	} catch(...) {
+		// If ship loading fails, clean up
+		if(mshp) {
+			delete mshp;
+			mshp=NULL;
+		}
+		throw;
+	}
 }
 
 player* player::players[ISIZE];

@@ -65,7 +65,8 @@ void database::openreader(FILE* dbf)
 				if(opos!=-1)
 					submitobj(strm,onam,opos,pos-opos);
 				*fnd='\0';
-				sprintf(onam,"%s",tmp+1);
+				strncpy(onam,tmp+1,sizeof(onam)-1);
+				onam[sizeof(onam)-1]='\0';
 				opos=pos;
 			}
 			fseek(strm,pos,SEEK_SET);
@@ -140,7 +141,7 @@ void database::closewriter()
 	}
 }
 
-void database::switchobj(char* nam)
+void database::switchobj(const char* nam)
 {
 	obj* got; //Object got from database
 
@@ -162,7 +163,7 @@ void database::switchobj(char* nam)
 	}
 }
 
-char* database::getvalue(char* key,char* val)
+char* database::getvalue(const char* key,char* val)
 {
 	char srch[68]; //Key statement to search for	
 	char* fnd; //Pointer to found string
@@ -203,7 +204,7 @@ char* database::getvalue(char* key,char* val)
 	return out;
 }
 
-long database::getvalue(char* key)
+long database::getvalue(const char* key)
 {
 	char val[65]; //String representation
 	long out; //Value to output
@@ -214,25 +215,25 @@ long database::getvalue(char* key)
 	return out;
 }
 
-void database::putobject(char* nam)
+void database::putobject(const char* nam)
 {
 	if(owrt)
 		fprintf(owrt,"@%s\n",nam);
 }
 
-void database::putvalue(char* key,char* val)
+void database::putvalue(const char* key,const char* val)
 {
 	if(owrt)
 		fprintf(owrt,"%s=%s\n",key,val);
 }
 
-void database::putvalue(char* key,long val)
+void database::putvalue(const char* key,long val)
 {
 	if(owrt)
 		fprintf(owrt,"%s=%ld\n",key,val);
 }
 
-void database::submitobj(FILE* strm,char* nam,long pos,long len)
+void database::submitobj(FILE* strm,const char* nam,long pos,long len)
 {
 	int hash; //Hash of name
 	obj* next; //Next bucket in chain to remember
@@ -254,7 +255,7 @@ void database::submitobj(FILE* strm,char* nam,long pos,long len)
 	bcks[hash]->prev=NULL;
 }
 
-obj* database::locateobj(char* nam)
+obj* database::locateobj(const char* nam)
 {
 	obj* next; //Next object to try
 	int hash; //Hash of name
@@ -270,7 +271,7 @@ obj* database::locateobj(char* nam)
 	return NULL;
 }
 
-int database::hashstring(char* str)
+int database::hashstring(const char* str)
 {
 	long out; //Value to output
 

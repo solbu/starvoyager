@@ -22,22 +22,26 @@ endif
 #CFLAGS:=`sdl-config --cflags` -ggdb3 -Wall -Werror -ansi -pedantic
 PACKAGENAME=$(NAME)-$(VERSION)-`uname -m`-`uname|tr [A-Z] [a-z]`.bin
 .SUFFIXES: .c .cc
+.PHONY: all clean install install-data install-bin uninstall binary dist
 
 all: starvoyager
 
 #Linking
-starvoyager: alliance.o camera.o database.o error.o game.o interface.o presence.o ship.o sound.o ticker.o calc.o client.o equip.o frag.o graphic.o planet.o server.o sockhelper.o sv.o player.o os.o SDL_rotozoom.o SDL_gfxPrimitives.o
+starvoyager: alliance.o camera.o database.o error.o game.o interface.o presence.o ship.o sound.o ticker.o calc.o client.o equip.o frag.o graphic.o planet.o server.o sockhelper.o sv.o player.o os.o SDL_rotozoom.o SDL_gfxPrimitives.o SDL_gfxBlitFunc.o
 	$(CC) -o $(NAME) $^ $(LIBS)
 
 #Include dependencies
-*.o: *.h
+# More specific dependency rules would go here if needed
 
-#Compiling
+#Compiling SDL_gfx files without warnings
 SDL_rotozoom.o: SDL_rotozoom.c
-	$(CC) $(CFLAGS) -c -o SDL_rotozoom.o SDL_rotozoom.c
+	$(CC) `sdl-config --cflags` -w -c -o SDL_rotozoom.o SDL_rotozoom.c
 
 SDL_gfxPrimitives.o: SDL_gfxPrimitives.c
-	$(CC) $(CFLAGS) -c -o SDL_gfxPrimitives.o SDL_gfxPrimitives.c
+	$(CC) `sdl-config --cflags` -w -c -o SDL_gfxPrimitives.o SDL_gfxPrimitives.c
+
+SDL_gfxBlitFunc.o: SDL_gfxBlitFunc.c
+	$(CC) `sdl-config --cflags` -w -c -o SDL_gfxBlitFunc.o SDL_gfxBlitFunc.c
 
 .cc.o:
 	$(CPPC) $(CFLAGS) -DPOSIX -DVERSION=\"${VERSION}\" -DDATADIR=\"${DATADIR}\" -c -o $@ $<
@@ -56,7 +60,6 @@ install-data: all
 	cp data/*.svd $(DATADIR)/
 
 install-bin: all
-	rm $(DOCDIR) -rf
 	mkdir -p $(BINDIR) $(DOCDIR)
 	cp $(NAME) $(BINDIR)/
 	cp README FAQ manual.html manual.txt $(DOCDIR)/

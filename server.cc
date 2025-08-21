@@ -57,6 +57,7 @@ void server::start(bool locg)
 	lstn=SDLNet_TCP_Open(&serv);
 	if(!lstn)
 		throw error("Can't open listening socket");
+	// fprintf(logf,"%s: Server started listening on port %d\n",os::gettime(),(int)PORT);
 	fprintf(logf,"%s: Server started listening on port %hd\n",os::gettime(),PORT);
 	fflush(logf);
 	server::locg=locg;
@@ -138,7 +139,7 @@ void server::notifykill(player* ply)
 }
 
 
-void server::hail(player* fr,player* to,char* msg)
+void server::hail(player* fr,player* to,const char* msg)
 {
 	char txt[256]; //Communications text
 	char* frnm; //Name of from
@@ -150,11 +151,12 @@ void server::hail(player* fr,player* to,char* msg)
 	if(fr)
 	{
 		frnm=fr->nam;
-		if(!frnm)
+		if(!frnm) {
 			if(fr->in)
 				frnm=fr->in->cls;
 			else
-				frnm="";
+				frnm=const_cast<char*>("");
+		}
 		snprintf(txt,sizeof(txt),"%s: %s",frnm,msg);
 	}
 	else
@@ -187,7 +189,7 @@ void server::hail(player* fr,player* to,char* msg)
 	}
 }
 
-void server::bulletin(char* fmt,...)
+void server::bulletin(const char* fmt,...)
 {
 	char buf[132]; //Outgoing buffer
 	va_list fmts;
@@ -210,7 +212,8 @@ void server::bulletin(char* fmt,...)
 			int k=0;
 			for(int j=0; j<131 && buf[j]!='\0'; j++)
 			{
-				if(buf[j]>=32 && buf[j]<=126 || buf[j]==' ')
+				// if(buf[j]>=32 && buf[j]<=126 && buf[j]!='\n' && buf[j]!='\r')
+				if((buf[j]>=32 && buf[j]<=126) || buf[j]==' ')
 					sanitized_bulletin[k++] = buf[j];
 			}
 			sanitized_bulletin[k] = '\0';
@@ -328,7 +331,7 @@ server::~server()
 	SDLNet_TCP_Close(sock);
 }
 
-void server::log(char* fmt,...)
+void server::log(const char* fmt,...)
 {
 	unsigned long ip; //ip of connecting client
 	octets* oip; //Ip as octets, for writing to Ip record
@@ -372,7 +375,7 @@ void server::log(char* fmt,...)
 	int k=0;
 	for(int j=0; j<len && j<511; j++)
 	{
-		if(temp_msg[j]>=32 && temp_msg[j]<=126 || temp_msg[j]==' ')
+		if((temp_msg[j]>=32 && temp_msg[j]<=126) || temp_msg[j]==' ')
 			sanitized_msg[k++] = temp_msg[j];
 	}
 	sanitized_msg[k] = '\0';
@@ -501,11 +504,12 @@ void server::action(int typ,short opr)
 						ply->in->enem=ship::get(opr-planet::ISIZE);
 						if(ply->in->enem==ply->in)
 							ply->in->enem=NULL;
-						if(ply->in->enem)
+						if(ply->in->enem) {
 							if(ply->in->all->opposes(ply->in->enem->all))
 								registersound(ply->in,SND_PROXIMITY);
 							else
 								registersound(ply->in,SND_BEEP2);
+						}
 					}
 				}
 				if(cmod==CMOD_SCAN || cmod==CMOD_HAIL || cmod==CMOD_WHOIS)
@@ -1044,7 +1048,8 @@ void server::input()
 		}
 		catch(error it)
 		{
-			ply=NULL;	
+			ply=NULL;
+			// log("%s", it.str);
 			log(it.str);
 			printtomesg(it.str);
 			changecmod(CMOD_NAME);
@@ -1159,7 +1164,7 @@ void server::input()
 	}
 }
 
-void server::printtocons(char* fmt,...)
+void server::printtocons(const char* fmt,...)
 {
 	unsigned char buf[1028]; //Outgoing buffer
 	va_list fmts;
@@ -1190,7 +1195,7 @@ void server::spritetocons(int indx)
 	}
 }
 
-void server::printtomesg(char* fmt,...)
+void server::printtomesg(const char* fmt,...)
 {
 	unsigned char buf[132]; //Outgoing buffer
 	va_list fmts;

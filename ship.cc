@@ -47,6 +47,10 @@ ship::ship()
 {
 	self=-1;
 	ply=NULL;
+	memset(cls, 0, sizeof(cls));
+	memset(slots, 0, sizeof(slots));
+	for(int i=0;i<32;i++)
+		slots[i].pos.rad=-1;
 }
 
 ship::~ship()
@@ -251,11 +255,12 @@ void ship::accel(int dir,bool wrp)
 			nsp=vel.rad+awp;
 		if(dir==-1)
 			nsp=vel.rad-awp;
-		if(nsp<100)
+		if(nsp<100) {
 			if(wrp)
 				nsp=mip;
 			else
 				nsp=100;
+		}
 	}
 	//Handle acceleration if currently at impulse
 	//if(vel.rad<=mip)
@@ -642,16 +647,18 @@ int ship::interact(char* txt,short cmod,short opr,ship* mshp)
 			txt+=sprintf(txt,"\n[3] Select equipment\n");
 			txt+=sprintf(txt,"[4] Jettison selection\n");
 		}
-		if(opr==1)
+		if(opr==1) {
 			if(shd && shd->rdy==-1)
 				shieldsup();
 			else
 				shieldsdown();
-		if(opr==2)
+		}
+		if(opr==2) {
 			if(clk && clk->rdy==-1)
 				cloak();
 			else
 				uncloak();
+		}
 		if(opr==3)
 		{
 			for(int i=0,j=esel+1;i<32;i++,j++)
@@ -1300,22 +1307,37 @@ void ship::load()
 	esel=-1;
 	for(int i=0;i<32;i++)
 	{
-		sprintf(atsc,"Slot%hdAngle",i);
-		slots[i].pos.ang=database::getvalue(atsc);
-		sprintf(atsc,"Slot%hdRadius",i);
-		slots[i].pos.rad=database::getvalue(atsc);
-		sprintf(atsc,"Slot%hdFace",i);
-		slots[i].face=database::getvalue(atsc);
-		if(slots[i].face==-1)
-			slots[i].face=slots[i].pos.ang;
-		sprintf(atsc,"Slot%hdItem",i);
-		slots[i].item=equip::get(database::getvalue(atsc));
-		sprintf(atsc,"Slot%hdReadiness",i);
-		slots[i].rdy=database::getvalue(atsc);
-		sprintf(atsc,"Slot%hdCapacity",i);
-		slots[i].cap=database::getvalue(atsc);
-		if(slots[i].cap==-1 && slots[i].item)
-			slots[i].cap=slots[i].item->cap;
+		// Initialize slot to safe defaults
+		slots[i].pos.ang=0;
+		slots[i].pos.rad=-1;
+		slots[i].face=0;
+		slots[i].item=NULL;
+		slots[i].rdy=0;
+		slots[i].cap=0;
+		
+		try {
+			sprintf(atsc,"Slot%hdAngle",i);
+			slots[i].pos.ang=database::getvalue(atsc);
+			sprintf(atsc,"Slot%hdRadius",i);
+			slots[i].pos.rad=database::getvalue(atsc);
+			sprintf(atsc,"Slot%hdFace",i);
+			slots[i].face=database::getvalue(atsc);
+			if(slots[i].face==-1)
+				slots[i].face=slots[i].pos.ang;
+			sprintf(atsc,"Slot%hdItem",i);
+			long item_id = database::getvalue(atsc);
+			if(item_id >= 0) {
+				slots[i].item=equip::get(item_id);
+			}
+			sprintf(atsc,"Slot%hdReadiness",i);
+			slots[i].rdy=database::getvalue(atsc);
+			sprintf(atsc,"Slot%hdCapacity",i);
+			slots[i].cap=database::getvalue(atsc);
+			if(slots[i].cap==-1 && slots[i].item)
+				slots[i].cap=slots[i].item->cap;
+		} catch(...) {
+			// If loading fails, leave slot in safe default state
+		}
 	}
 
 	if(hul==-1)
@@ -1870,11 +1892,12 @@ void ship::behave()
 				if(calc::rnd(10)==0)
 					enem=NULL;
 			}
-			if(!enem)
+			if(!enem) {
 				if(frnd && frnd->enem)
 					enem=frnd->enem;
 				else
 					enem=pickhostile();
+		}
 			if(frnd)
 			{
 				if(frnd->clk && frnd->clk->cap!=0)
