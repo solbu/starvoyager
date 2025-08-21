@@ -504,11 +504,12 @@ void server::action(int typ,short opr)
 						ply->in->enem=ship::get(opr-planet::ISIZE);
 						if(ply->in->enem==ply->in)
 							ply->in->enem=NULL;
-						if(ply->in->enem)
+						if(ply->in->enem) {
 							if(ply->in->all->opposes(ply->in->enem->all))
 								registersound(ply->in,SND_PROXIMITY);
 							else
 								registersound(ply->in,SND_BEEP2);
+						}
 					}
 				}
 				if(cmod==CMOD_SCAN || cmod==CMOD_HAIL || cmod==CMOD_WHOIS)

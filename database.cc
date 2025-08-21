@@ -65,7 +65,8 @@ void database::openreader(FILE* dbf)
 				if(opos!=-1)
 					submitobj(strm,onam,opos,pos-opos);
 				*fnd='\0';
-				sprintf(onam,"%s",tmp+1);
+				strncpy(onam,tmp+1,sizeof(onam)-1);
+				onam[sizeof(onam)-1]='\0';
 				opos=pos;
 			}
 			fseek(strm,pos,SEEK_SET);

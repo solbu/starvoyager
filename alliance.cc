@@ -178,7 +178,7 @@ void alliance::maketerritory(cord seed) //Generate the star systems for this all
 				else
 				{
 					ptyp=planet::UNINHABITED;
-					sprintf(pnam,"%s %hd",snam,j);
+					snprintf(pnam,sizeof(pnam),"%s %hd",snam,j);
 				}
 			}
 			try
