@@ -315,67 +315,67 @@ void ship::shoot(bool torp)
 	pol ptmp;
 	vect vtmp; //Temporaries for calculations
 	vect corr; //Correction vector
-	pol ptrg; //Polar to target
-	double dis; //Distance to target
-	vect vtrg; //Vector to target
-	cord cemt; //Location to emit frag at
-	pol pemt; //Polar velocity to emit frag at
-	vect vemt; //Vector to emit frag at
-	double dif; //Angle difference
-	long rng; //Range
+	pol polar_to_target; //Polar to target
+	double distance_to_target; //Distance to target
+	vect vector_to_target; //Vector to target
+	cord emission_location; //Location to emit frag at
+	pol emission_polar; //Polar velocity to emit frag at
+	vect emission_vector; //Vector to emit frag at
+	double angle_difference; //Angle difference
+	long weapon_range; //Range
 	bool can; //Can shoot from this slot?
-	equip* lnch; //Equipment doing the launching
+	equip* launcher_equipment; //Equipment doing the launching
 
 	if(!see(enem))
 		return;
 	if(vel.rad>=100)
 		return;
-	rng=0;
+	weapon_range=0;
 	for(int i=0;i<32;i++)
 	{
 		if(slots[i].item && ((torp && slots[i].item->typ==equip::LAUNCHER) || (!torp && slots[i].item->typ==equip::PHASER)))
 		{
-			lnch=slots[i].item;
-			vtrg.xx=enem->loc.x-loc.x;
-			vtrg.yy=enem->loc.y-loc.y;
-			ptrg=vtrg.topol();
-			dis=ptrg.rad;
+			launcher_equipment=slots[i].item;
+			vector_to_target.xx=enem->loc.x-loc.x;
+			vector_to_target.yy=enem->loc.y-loc.y;
+			polar_to_target=vector_to_target.topol();
+			distance_to_target=polar_to_target.rad;
 
 			can=false;
-			if(lnch->typ==equip::PHASER)
+			if(launcher_equipment->typ==equip::PHASER)
 			{
-				rng=lnch->rng*lnch->trck;
-				if(lnch->trck)
+				weapon_range=launcher_equipment->rng*launcher_equipment->trck;
+				if(launcher_equipment->trck)
 				{
-					corr.xx=((enem->mov.xx-mov.xx)*(ptrg.rad/lnch->trck));
-					corr.yy=((enem->mov.yy-mov.yy)*(ptrg.rad/lnch->trck));
-					if(vtrg.xx && corr.xx*10/vtrg.xx<10)
-						vtrg.xx+=corr.xx;
-					if(vtrg.yy && corr.yy*10/vtrg.yy<10)
-						vtrg.yy+=corr.yy;
-					ptrg=vtrg.topol();
-					ptrg.rad=dis;
+					corr.xx=((enem->mov.xx-mov.xx)*(polar_to_target.rad/launcher_equipment->trck));
+					corr.yy=((enem->mov.yy-mov.yy)*(polar_to_target.rad/launcher_equipment->trck));
+					if(vector_to_target.xx && corr.xx*10/vector_to_target.xx<10)
+						vector_to_target.xx+=corr.xx;
+					if(vector_to_target.yy && corr.yy*10/vector_to_target.yy<10)
+						vector_to_target.yy+=corr.yy;
+					polar_to_target=vector_to_target.topol();
+					polar_to_target.rad=distance_to_target;
 				}
 			}
-			if(lnch->typ==equip::LAUNCHER)
-				rng=((lnch->rng*lnch->rng)/2)*lnch->trck;
+			if(launcher_equipment->typ==equip::LAUNCHER)
+				weapon_range=((launcher_equipment->rng*launcher_equipment->rng)/2)*launcher_equipment->trck;
 
-			if(ptrg.rad<=rng)
+			if(polar_to_target.rad<=weapon_range)
 				can=true;
 			if(can)
 			{
-				dif=ptrg.ang-(vel.ang+slots[i].face);
-				if(dif>180)
-					dif=dif-360;
-				if(dif<-180)
-					dif=dif+360;
-				if(dif>(lnch->acov) || dif<-(lnch->acov))
+				angle_difference=polar_to_target.ang-(vel.ang+slots[i].face);
+				if(angle_difference>180)
+					angle_difference=angle_difference-360;
+				if(angle_difference<-180)
+					angle_difference=angle_difference+360;
+				if(angle_difference>(launcher_equipment->acov) || angle_difference<-(launcher_equipment->acov))
 					can=false;	
-				if(dif>(lnch->acov) || dif<-(lnch->acov))
+				if(angle_difference>(launcher_equipment->acov) || angle_difference<-(launcher_equipment->acov))
 					can=false;		
-				if(lnch->typ==equip::PHASER && power_plant->cap<lnch->pow)
+				if(launcher_equipment->typ==equip::PHASER && power_plant->cap<launcher_equipment->pow)
 					can=false;
-				if(lnch->typ==equip::LAUNCHER && !(slots[i].cap>0))
+				if(launcher_equipment->typ==equip::LAUNCHER && !(slots[i].cap>0))
 					can=false;
 				if(slots[i].rdy!=0)
 					can=false;
@@ -390,50 +390,50 @@ void ship::shoot(bool torp)
 					ptmp.ang-=360;
 				vtmp=ptmp.tovect();
 				
-				cemt.x=vtmp.xx+loc.x;
-				cemt.y=vtmp.yy+loc.y;
+				emission_location.x=vtmp.xx+loc.x;
+				emission_location.y=vtmp.yy+loc.y;
 
 				if(torp)
 				{
-					pemt.ang=slots[i].face+vel.ang; //Sort out the angle a torpedo is shot at
-					if(pemt.ang>=360)
-						pemt.ang-=360;
-					pemt.rad=lnch->trck*2; //and the speed
+					emission_polar.ang=slots[i].face+vel.ang; //Sort out the angle a torpedo is shot at
+					if(emission_polar.ang>=360)
+						emission_polar.ang-=360;
+					emission_polar.rad=launcher_equipment->trck*2; //and the speed
 				}
 				else
 				{
-					pemt.ang=ptrg.ang; //velocity of phaser fire emission, towards target at fixed speed for this weapon
-					pemt.rad=lnch->trck;
+					emission_polar.ang=polar_to_target.ang; //velocity of phaser fire emission, towards target at fixed speed for this weapon
+					emission_polar.rad=launcher_equipment->trck;
 				}
 
-				vemt=pemt.tovect();
-				vemt.xx+=mov.xx;
-				vemt.yy+=mov.yy;
+				emission_vector=emission_polar.tovect();
+				emission_vector.xx+=mov.xx;
+				emission_vector.yy+=mov.yy;
 
-				if(lnch->typ==equip::PHASER)
+				if(launcher_equipment->typ==equip::PHASER)
 				{
-					power_plant->cap-=lnch->pow;
+					power_plant->cap-=launcher_equipment->pow;
 					try
 					{
-						new frag(cemt,frag::ENERGY,lnch->spr,lnch->col,enem,this,vemt,((ptrg.ang+5)/10),lnch->pow,0,lnch->rng);
+						new frag(emission_location,frag::ENERGY,launcher_equipment->spr,launcher_equipment->col,enem,this,emission_vector,((polar_to_target.ang+5)/10),launcher_equipment->pow,0,launcher_equipment->rng);
 					}
 					catch(error it)
 					{
 					}
 				}
-				if(lnch->typ==equip::LAUNCHER)
+				if(launcher_equipment->typ==equip::LAUNCHER)
 				{
 					slots[i].cap--;
 					try
 					{
-						new frag(cemt,frag::HOMER,lnch->spr,lnch->col,enem,this,vemt,0,lnch->pow,lnch->trck,lnch->rng);
+						new frag(emission_location,frag::HOMER,launcher_equipment->spr,launcher_equipment->col,enem,this,emission_vector,0,launcher_equipment->pow,launcher_equipment->trck,launcher_equipment->rng);
 					}
 					catch(error it)
 					{
 					}
 				}
-				server::registernoise(this,lnch->snd);
-				slots[i].rdy=lnch->rdy;
+				server::registernoise(this,launcher_equipment->snd);
+				slots[i].rdy=launcher_equipment->rdy;
 				if(torp)
 					break;
 			}
@@ -443,73 +443,73 @@ void ship::shoot(bool torp)
 
 bool ship::see(ship* target_ship)
 {
-	double rng; //Effective range
+	double weapon_range; //Effective range
 
 	if(!target_ship) //Null ship
 		return false;
 	if(target_ship==this) //Can always see self
 		return true;
 	if(sensor_array) //Set the sensor range, or default if no sensor suite
-		rng=sensor_array->item->rng;
+		weapon_range=sensor_array->item->rng;
 	else
-		rng=1000;
+		weapon_range=1000;
 	if(target_ship->vel.rad<20) //Slower ships less visible
-		rng-=(((rng/2)*(20-target_ship->vel.rad))/20);
+		weapon_range-=(((weapon_range/2)*(20-target_ship->vel.rad))/20);
 	if(target_ship->cloaking_device && target_ship->cloaking_device->cap==target_ship->cloaking_device->item->cap) //Cloaked ships even less visible
-		rng/=8;
-	if((target_ship->loc.x-loc.x)>rng) //Bounds checking
+		weapon_range/=8;
+	if((target_ship->loc.x-loc.x)>weapon_range) //Bounds checking
 		return false;
-	if((target_ship->loc.x-loc.x)<-rng)
+	if((target_ship->loc.x-loc.x)<-weapon_range)
 		return false;
-	if((target_ship->loc.y-loc.y)>rng)
+	if((target_ship->loc.y-loc.y)>weapon_range)
 		return false;
-	if((target_ship->loc.y-loc.y)<-rng)
+	if((target_ship->loc.y-loc.y)<-weapon_range)
 		return false;
 	return true;
 }
 
 bool ship::see(planet* target_planet)
 {
-	double rng; //Effective range
+	double weapon_range; //Effective range
 
 	if(!target_planet) //Null planet
 		return false;
 	if(sensor_array) //Set the sensor range, or default if no sensor suite
-		rng=sensor_array->item->rng;
+		weapon_range=sensor_array->item->rng;
 	else
-		rng=1000;
+		weapon_range=1000;
 	if(target_planet->typ==planet::STAR) //Can always see stars
 		return true;
-	if((target_planet->loc.x-loc.x)>rng) //Bounds checking
+	if((target_planet->loc.x-loc.x)>weapon_range) //Bounds checking
 		return false;
-	if((target_planet->loc.x-loc.x)<-rng)
+	if((target_planet->loc.x-loc.x)<-weapon_range)
 		return false;
-	if((target_planet->loc.y-loc.y)>rng)
+	if((target_planet->loc.y-loc.y)>weapon_range)
 		return false;
-	if((target_planet->loc.y-loc.y)<-rng)
+	if((target_planet->loc.y-loc.y)<-weapon_range)
 		return false;
 	return true;		
 }
 
 bool ship::see(frag* tfrg)
 {
-	double rng; //Effective range
+	double weapon_range; //Effective range
 
 	if(!tfrg) //Null frag
 		return false;
 	if(sensor_array) //Set the sensor range, or default if no sensor suite
-		rng=sensor_array->item->rng;
+		weapon_range=sensor_array->item->rng;
 	else
-		rng=1000;
+		weapon_range=1000;
 	if(tfrg->trg==this || tfrg->own==this) //For bandwidth spamming reasons, only see frags when really close unless they concern you
 	{
-		if((tfrg->loc.x-loc.x)>rng)
+		if((tfrg->loc.x-loc.x)>weapon_range)
 			return false;
-		if((tfrg->loc.x-loc.x)<-rng)
+		if((tfrg->loc.x-loc.x)<-weapon_range)
 			return false;
-		if((tfrg->loc.y-loc.y)>rng)
+		if((tfrg->loc.y-loc.y)>weapon_range)
 			return false;
-		if((tfrg->loc.y-loc.y)<-rng)
+		if((tfrg->loc.y-loc.y)<-weapon_range)
 			return false;
 	}
 	else
@@ -914,14 +914,14 @@ void ship::netout(int typ,unsigned char* buf)
 	}
 }
 
-bool ship::colldetect(cord frgl,vect frgv)
+bool ship::colldetect(cord fragment_location,vect fragment_velocity)
 {
 	int rot; //Target rotation
 	double x1,y1,x2,y2,xx,yy; //Target bounding box
 
 	rot=(int)(((vel.ang+5)/10))%36;
-	xx=(frgv.xx-mov.xx)/2;
-	yy=(frgv.yy-mov.yy)/2;
+	xx=(fragment_velocity.xx-mov.xx)/2;
+	yy=(fragment_velocity.yy-mov.yy)/2;
 	if(xx<0)
 		xx=-xx;
 	if(yy<0)
@@ -930,18 +930,18 @@ bool ship::colldetect(cord frgl,vect frgv)
 	y1=loc.y-(h[rot]*3)/2-yy;
 	x2=loc.x+(w[rot]*3)/2+xx;
 	y2=loc.y+(h[rot]*3)/2+yy;
-	if(frgl.x>x1 && frgl.x<x2 && frgl.y>y1 && frgl.y<y2)
+	if(fragment_location.x>x1 && fragment_location.x<x2 && fragment_location.y>y1 && fragment_location.y<y2)
 		return true;
 	else
 		return false;
 }
 
-void ship::hit(int mag,cord frgl,vect frgv,ship* src)
+void ship::hit(int mag,cord fragment_location,vect fragment_velocity,ship* src)
 {
 	cord tmpc;
 	vect tmpv; //Temporary for working out detonations
 	int rot; //Target rotation
-	int ndeb; //Number of debris bits
+	int debris_count; //Number of debris bits
 
 	uncloak();
 	rot=(int)(((vel.ang+5)/10))%36;
@@ -954,7 +954,7 @@ void ship::hit(int mag,cord frgl,vect frgv,ship* src)
 	{
 		try
 		{
-			new frag(frgl,frag::DEBRIS,shield_generator->item->spr,-1,NULL,this,mov,calc::rnd(36),0,0,2);
+			new frag(fragment_location,frag::DEBRIS,shield_generator->item->spr,-1,NULL,this,mov,calc::rnd(36),0,0,2);
 		}
 		catch(error it)
 		{
@@ -964,18 +964,18 @@ void ship::hit(int mag,cord frgl,vect frgv,ship* src)
 	{
 		if(shield_generator)
 			shield_generator->cap=0;
-		frgl.x=(frgl.x+2*loc.x)/3;
-		frgl.y=(frgl.y+2*loc.y)/3;
+		fragment_location.x=(fragment_location.x+2*loc.x)/3;
+		fragment_location.y=(fragment_location.y+2*loc.y)/3;
 		for(int i=0;i<5;i++)
 		{
 			tmpv=mov;
-			frgl.x+=calc::rnd(2)-calc::rnd(2);
-			frgl.y+=calc::rnd(2)-calc::rnd(2);
+			fragment_location.x+=calc::rnd(2)-calc::rnd(2);
+			fragment_location.y+=calc::rnd(2)-calc::rnd(2);
 			tmpv.xx+=calc::rnd(2)-calc::rnd(2);
 			tmpv.yy+=calc::rnd(2)-calc::rnd(2);
 			try
 			{
-				new frag(frgl,frag::DEBRIS,frag::FIRE,-1,NULL,this,tmpv,calc::rnd(36),0,0,calc::rnd(5)+5);
+				new frag(fragment_location,frag::DEBRIS,frag::FIRE,-1,NULL,this,tmpv,calc::rnd(36),0,0,calc::rnd(5)+5);
 			}
 			catch(error it)
 			{
@@ -992,10 +992,10 @@ void ship::hit(int mag,cord frgl,vect frgv,ship* src)
 	if(hull_integrity<=0)
 	{
 		hull_integrity=0;
-		ndeb=mass/8+4;
-		if(ndeb>70)
-			ndeb=70;
-		for(int i=0;i<ndeb;i++)
+		debris_count=mass/8+4;
+		if(debris_count>70)
+			debris_count=70;
+		for(int i=0;i<debris_count;i++)
 		{	
 			if(i==0 || calc::rnd(5)==0)
 			{
@@ -1446,17 +1446,17 @@ void ship::physics()
 
 void ship::autonav(planet* target_planet)
 {
-	vect vtrg; //Vector to target
-	pol ptrg; //Polar to target
+	vect vector_to_target; //Vector to target
+	pol polar_to_target; //Polar to target
 	double dd; //Directional difference
 	double tol; //Angular tolerance
 
-	vtrg.xx=(self*497)%800-400+target_planet->loc.x-loc.x;
-	vtrg.yy=(self*273)%800-400+target_planet->loc.y-loc.y; //Vector to deterministic but arbitrary location near target planet
+	vector_to_target.xx=(self*497)%800-400+target_planet->loc.x-loc.x;
+	vector_to_target.yy=(self*273)%800-400+target_planet->loc.y-loc.y; //Vector to deterministic but arbitrary location near target planet
 
-	ptrg=vtrg.topol(); //...make polar
+	polar_to_target=vector_to_target.topol(); //...make polar
 
-	dd=ptrg.ang-vel.ang;
+	dd=polar_to_target.ang-vel.ang;
 	if(dd>180)
 		dd=dd-360;
 	if(dd<-180)
@@ -1466,28 +1466,28 @@ void ship::autonav(planet* target_planet)
 	if(vel.rad<=5) 
 		tol=20; //Low speed; not too fussed about fine direction finding
 
-	ptrg.rad-=150; //Stand off distance
+	polar_to_target.rad-=150; //Stand off distance
 
-	if(ptrg.rad<0) //Don't turn when too close
+	if(polar_to_target.rad<0) //Don't turn when too close
 		dd=0;
 
 	if(dd<tol && dd>-tol) //Don't turn when within angle tolerance
 		dd=0;
 
-	if(dd==0 && ptrg.rad>0) //Only accelerate when heading at target
+	if(dd==0 && polar_to_target.rad>0) //Only accelerate when heading at target
 	{
 		if(vel.rad>=100)
 		{
-			if(vel.rad<sqrt(2*warp_acceleration*ptrg.rad)-warp_acceleration)
+			if(vel.rad<sqrt(2*warp_acceleration*polar_to_target.rad)-warp_acceleration)
 				accel(+1,true);
-			else if(vel.rad>sqrt(2*warp_acceleration*ptrg.rad)+warp_acceleration)
+			else if(vel.rad>sqrt(2*warp_acceleration*polar_to_target.rad)+warp_acceleration)
 				accel(-1,true);
 		}
 		else
 		{
-			if(vel.rad<(sqrt(2*impulse_acceleration*ptrg.rad)-impulse_acceleration))  //Intended speed is sqrt(2as)
+			if(vel.rad<(sqrt(2*impulse_acceleration*polar_to_target.rad)-impulse_acceleration))  //Intended speed is sqrt(2as)
 				accel(+1,true);
-			else if(vel.rad>(sqrt(3*impulse_acceleration*ptrg.rad))+impulse_acceleration)
+			else if(vel.rad>(sqrt(3*impulse_acceleration*polar_to_target.rad))+impulse_acceleration)
 				accel(-1,true);
 		}
 	}
@@ -1501,54 +1501,54 @@ void ship::autonav(planet* target_planet)
 
 void ship::follow(ship* target_ship)
 {
-	vect vtrg; //Vector to target
-	pol ptrg; //Polar to target
+	vect vector_to_target; //Vector to target
+	pol polar_to_target; //Polar to target
 	double dd; //Directional difference
 	double tol; //Angular tolerance
 
-	ptrg.ang=target_ship->vel.ang+90+(self*29)%180; //Find deterministic formation angle to hold at around target ship
-	ptrg.rad=100+(self*17)%((sensor_array ? sensor_array->item->rng : 1000)/16); //Deterministic range to hold based on sensor range
-	vtrg=ptrg.tovect();
+	polar_to_target.ang=target_ship->vel.ang+90+(self*29)%180; //Find deterministic formation angle to hold at around target ship
+	polar_to_target.rad=100+(self*17)%((sensor_array ? sensor_array->item->rng : 1000)/16); //Deterministic range to hold based on sensor range
+	vector_to_target=polar_to_target.tovect();
 		
-	vtrg.xx+=target_ship->loc.x-loc.x;
-	vtrg.yy+=target_ship->loc.y-loc.y;
-	ptrg=vtrg.topol(); //Get polar vector to this formation position
+	vector_to_target.xx+=target_ship->loc.x-loc.x;
+	vector_to_target.yy+=target_ship->loc.y-loc.y;
+	polar_to_target=vector_to_target.topol(); //Get polar vector to this formation position
 
-	dd=ptrg.ang-vel.ang;
+	dd=polar_to_target.ang-vel.ang;
 	if(dd>180)
 		dd=dd-360;
 	if(dd<-180)
 		dd=dd+360; //Evaluate angle between current heading and target bearing
 
 	if(!see(target_ship))
-		ptrg.rad-=(sensor_array ? sensor_array->item->rng : 1000)/3; //If you can't see the target, stand off a little
+		polar_to_target.rad-=(sensor_array ? sensor_array->item->rng : 1000)/3; //If you can't see the target, stand off a little
 
 	tol=turn_rate*2+2;
 	if(vel.rad<=5) 
 		tol=20; //Low speed; not too fussed about fine direction finding
 
-	ptrg.rad-=150; //Default stand off
+	polar_to_target.rad-=150; //Default stand off
 
-	if(ptrg.rad<0) //Don't turn when too close
+	if(polar_to_target.rad<0) //Don't turn when too close
 		dd=0;
 
 	if(dd<tol && dd>-tol) //Don't turn when within angle tolerance
 		dd=0;
 
-	if(dd==0 && ptrg.rad>0) //Only accelerate when heading at target
+	if(dd==0 && polar_to_target.rad>0) //Only accelerate when heading at target
 	{
 		if(vel.rad>=100)
 		{
-			if(vel.rad<sqrt(2*warp_acceleration*ptrg.rad)-warp_acceleration)
+			if(vel.rad<sqrt(2*warp_acceleration*polar_to_target.rad)-warp_acceleration)
 				accel(+1,true);
-			else if(vel.rad>sqrt(2*warp_acceleration*ptrg.rad)+warp_acceleration)
+			else if(vel.rad>sqrt(2*warp_acceleration*polar_to_target.rad)+warp_acceleration)
 				accel(-1,true);
 		}
 		else
 		{
-			if(vel.rad<(sqrt(2*impulse_acceleration*ptrg.rad)-2*impulse_acceleration))  //Intended speed is sqrt(2as)
+			if(vel.rad<(sqrt(2*impulse_acceleration*polar_to_target.rad)-2*impulse_acceleration))  //Intended speed is sqrt(2as)
 				accel(+1,true);
-			else if(vel.rad>(sqrt(2*impulse_acceleration*ptrg.rad)+2*impulse_acceleration))
+			else if(vel.rad>(sqrt(2*impulse_acceleration*polar_to_target.rad)+2*impulse_acceleration))
 				accel(-1,true);
 		}
 	}
@@ -1563,8 +1563,8 @@ void ship::follow(ship* target_ship)
 
 void ship::attackpattern(ship* target_ship,int str)
 {
-	vect vtrg; //Vector to target
-	pol ptrg; //Polar to target
+	vect vector_to_target; //Vector to target
+	pol polar_to_target; //Polar to target
 	double dd; //Directional difference
 	double tol; //Angular tolerance
 
@@ -1574,24 +1574,24 @@ void ship::attackpattern(ship* target_ship,int str)
 		return;
 	}
 	if(str>(200+calc::rnd((self%7)*12)-50)) //Alternate on tailing target from one of two sides
-		ptrg.ang=target_ship->vel.ang+45+(str-self*29)%135;
+		polar_to_target.ang=target_ship->vel.ang+45+(str-self*29)%135;
 	else
-		ptrg.ang=target_ship->vel.ang-45-(str+self*29)%135;
-	ptrg.rad=100+(self*17)%((str+(sensor_array ? sensor_array->item->rng : 1000))/16); //Back off a little depending on sensor range
-	vtrg=ptrg.tovect();
+		polar_to_target.ang=target_ship->vel.ang-45-(str+self*29)%135;
+	polar_to_target.rad=100+(self*17)%((str+(sensor_array ? sensor_array->item->rng : 1000))/16); //Back off a little depending on sensor range
+	vector_to_target=polar_to_target.tovect();
 		
-	vtrg.xx+=target_ship->loc.x-loc.x;
-	vtrg.yy+=target_ship->loc.y-loc.y;
-	ptrg=vtrg.topol(); //And finally get a polar to the 'formation' position
+	vector_to_target.xx+=target_ship->loc.x-loc.x;
+	vector_to_target.yy+=target_ship->loc.y-loc.y;
+	polar_to_target=vector_to_target.topol(); //And finally get a polar to the 'formation' position
 
-	dd=ptrg.ang-vel.ang;
+	dd=polar_to_target.ang-vel.ang;
 	if(dd>180)
 		dd=dd-360;
 	if(dd<-180)
 		dd=dd+360; //Evaluate angle between current heading and target bearing
 
 	if(!see(target_ship))
-		ptrg.rad-=(sensor_array ? sensor_array->item->rng : 1000)/3; //If you can't see the target, stand off a little
+		polar_to_target.rad-=(sensor_array ? sensor_array->item->rng : 1000)/3; //If you can't see the target, stand off a little
 	tol=turn_rate*2+2;
 
 	if(vel.rad<=5) 
@@ -1599,24 +1599,24 @@ void ship::attackpattern(ship* target_ship,int str)
 
 	tol+=45; //Widen angle tolerance for close combat flair
 
-	if(ptrg.rad<0) //Don't turn when too close
+	if(polar_to_target.rad<0) //Don't turn when too close
 		dd=0;
 
 	if(dd<tol && dd>-tol) //Don't turn when within angle tolerance
 		dd=0;
 
-	if(dd==0 && ptrg.rad>0) //Only accelerate when heading at target
+	if(dd==0 && polar_to_target.rad>0) //Only accelerate when heading at target
 	{
 		if(vel.rad>=100)
 		{
-			if(ptrg.rad && (ptrg.rad/vel.rad) && ((vel.rad)/(12*ptrg.rad/vel.rad))>=warp_acceleration-30)
+			if(polar_to_target.rad && (polar_to_target.rad/vel.rad) && ((vel.rad)/(12*polar_to_target.rad/vel.rad))>=warp_acceleration-30)
 				accel(-1,true);
 			else
 				accel(+1,true);
 		}
 		else
 		{
-			if(ptrg.rad && ((5*vel.rad*vel.rad)/(ptrg.rad))>=impulse_acceleration)
+			if(polar_to_target.rad && ((5*vel.rad*vel.rad)/(polar_to_target.rad))>=impulse_acceleration)
 				accel(-1,true);
 			else
 				accel(+1,true);

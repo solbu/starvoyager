@@ -61,8 +61,8 @@ class ship //Spaceship type in game
 	void shieldsup(); //Raise the shields
 	void shieldsdown(); //Drop the shields
 	void netout(int typ,unsigned char* buf); //Get type of data from ship into a network buffer
-	bool colldetect(cord frgl,vect frgv); //Given an intruder location and vector, determines if a collision occurs, returning true if it does, false otherwise
-	void hit(int mag,cord frgl,vect frgv,ship* src); //Damages the ship with given magnitude, also location and vector of striking object, plus the source of the attack (expected to be frag owner)
+	bool colldetect(cord fragment_location,vect fragment_velocity); //Given an intruder location and vector, determines if a collision occurs, returning true if it does, false otherwise
+	void hit(int mag,cord fragment_location,vect fragment_velocity,ship* src); //Damages the ship with given magnitude, also location and vector of striking object, plus the source of the attack (expected to be frag owner)
 	void assign(player* ply); //Sets the ship up for entrance of given player
 	long purchase(int prch,short ripo,bool buy);
 	long purchase(equip* prch,int ripo,bool buy); //Returns the cost of a given purchase type at given rip-off index, with buy set actually deducts the cash
