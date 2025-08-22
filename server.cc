@@ -429,7 +429,7 @@ void server::poll()
 		buf=hlpr->request(6);
 		if(buf)
 		{
-			if(calc::dateq((unsigned char*)SIGN,buf,6))
+			if(calc::data_arrays_equal((unsigned char*)SIGN,buf,6))
 				auth=true;
 			else
 				throw error("Using incorrect protocol");
@@ -1224,18 +1224,18 @@ void server::uploads()
 	if(ply && ply->in)
 	{
 		if(!hlpr) return;
-		ply->in->netout(SERV_SELF,buf);
+		ply->in->serialize_to_network(SERV_SELF,buf);
 		hlpr->send(buf,SERV_SELF_SZ);
 		calc::inttodat(foc,buf+21);
 		/*if(!shpu[ply->in->self])
 		{
-			ply->in->netout(SERV_NEW,buf);
+			ply->in->serialize_to_network(SERV_NEW,buf);
 			hlpr->send(buf,SERV_NEW_SZ);
-			ply->in->netout(SERV_NAME,buf);
+			ply->in->serialize_to_network(SERV_NAME,buf);
 			hlpr->send(buf,SERV_NAME_SZ);
 			shpu[ply->in->self]=true;
 		}
-		ply->in->netout(SERV_UPD,buf);
+		ply->in->serialize_to_network(SERV_UPD,buf);
 		buf[21]=0;
 		hlpr->send(buf,SERV_UPD_SZ);*/
 		
@@ -1265,13 +1265,13 @@ void server::uploadplanets()
 			{
 				if(!plnu[i])
 				{
-					tpln->netout(SERV_NEW,buf);
+					tpln->serialize_to_network(SERV_NEW,buf);
 					hlpr->send(buf,SERV_NEW_SZ);
-					tpln->netout(SERV_NAME,buf);
+					tpln->serialize_to_network(SERV_NAME,buf);
 					hlpr->send(buf,SERV_NAME_SZ);
 					plnu[i]=true;
 				}
-				tpln->netout(SERV_UPD,buf);
+				tpln->serialize_to_network(SERV_UPD,buf);
 				hlpr->send(buf,SERV_UPD_SZ);
 			}
 			else
@@ -1315,13 +1315,13 @@ void server::uploadships()
 				{
 					if(!shpu[i])
 					{
-						tshp->netout(SERV_NEW,buf);
+						tshp->serialize_to_network(SERV_NEW,buf);
 						hlpr->send(buf,SERV_NEW_SZ);
-						tshp->netout(SERV_NAME,buf);
+						tshp->serialize_to_network(SERV_NAME,buf);
 						hlpr->send(buf,SERV_NAME_SZ);
 						shpu[i]=true;
 					}
-					tshp->netout(SERV_UPD,buf);
+					tshp->serialize_to_network(SERV_UPD,buf);
 					if(ply->in->all->opposes(tshp->all))
 						buf[21]=1;
 					hlpr->send(buf,SERV_UPD_SZ);
@@ -1366,14 +1366,14 @@ void server::uploadfrags()
 			{
 				if(frgu[i])
 				{
-					tfrg->netout(SERV_UPD,buf);
+					tfrg->serialize_to_network(SERV_UPD,buf);
 					hlpr->send(buf,SERV_UPD_SZ);
 				}
 				else
 				{
-					tfrg->netout(SERV_NEW,buf);
+					tfrg->serialize_to_network(SERV_NEW,buf);
 					hlpr->send(buf,SERV_NEW_SZ);
-					tfrg->netout(SERV_UPD,buf);
+					tfrg->serialize_to_network(SERV_UPD,buf);
 					hlpr->send(buf,SERV_UPD_SZ);
 					frgu[i]=true;
 				}

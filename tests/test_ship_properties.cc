@@ -22,7 +22,7 @@ void test_mass_calculations() {
 		// Test mass-related functionality through freemass()
 		ship* test_ship = ship::libget(0);
 		if (test_ship) {
-			int free_mass = test_ship->freemass();
+			int free_mass = test_ship->get_available_cargo_space();
 			TEST_ASSERT(free_mass >= 0, "free mass calculation returns valid value");
 		} else {
 			TEST_ASSERT(true, "mass calculation test skipped (no test ship)");
@@ -41,7 +41,7 @@ void test_hull_integrity_system() {
 			vect test_velocity = {0, 0};
 			
 			// Test collision detection (uses hull dimensions)
-			bool collision = test_ship->colldetect(test_location, test_velocity);
+			bool collision = test_ship->detect_collision(test_location, test_velocity);
 			TEST_ASSERT(collision == false, "collision detection works");
 		} else {
 			TEST_ASSERT(true, "hull integrity test skipped (no test ship)");

@@ -225,8 +225,8 @@ class calc //Mathematics module
 			out[1]=tmpp[1];
 			return;
 		}
-        static bool dateq(unsigned char* d1,unsigned char* d2,int n); //Test two data streams for equality, up to n bytes
-		static void obscure(char* str); //Munges the string so it is no longer human readable; the munging is consisten, like a very weak crypt
+        static bool data_arrays_equal(unsigned char* d1,unsigned char* d2,int n); //Test two data streams for equality, up to n bytes
+		static void encrypt_password(char* str); //Munges the string so it is no longer human readable; the munging is consisten, like a very weak crypt
 
         private:
         static long wrp[10]; //Warp speed table

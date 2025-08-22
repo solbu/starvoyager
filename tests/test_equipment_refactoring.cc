@@ -23,7 +23,7 @@ void test_power_plant_operations() {
 		ship* test_ship = ship::libget(0);
 		if (test_ship) {
 			// Test free mass calculation (uses equipment slots)
-			int free_mass = test_ship->freemass();
+			int free_mass = test_ship->get_available_cargo_space();
 			TEST_ASSERT(free_mass >= 0, "free mass calculation works");
 		} else {
 			TEST_ASSERT(true, "power plant test skipped (no test ship)");
@@ -101,11 +101,11 @@ void test_equipment_slot_integrity() {
 		ship* test_ship = ship::libget(0);
 		if (test_ship) {
 			// Test equipment system indirectly through resequip
-			test_ship->resequip();
+			test_ship->update_equipment_references();
 			TEST_ASSERT(true, "equipment resequencing works");
 			
 			// Test free mass calculation (depends on equipment)
-			int free_mass = test_ship->freemass();
+			int free_mass = test_ship->get_available_cargo_space();
 			TEST_ASSERT(free_mass >= 0, "free mass calculation returns valid value");
 		} else {
 			TEST_ASSERT(true, "equipment slot test skipped (no test ship)");

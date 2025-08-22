@@ -185,7 +185,7 @@ void player::login(char* pass)
 		if(strlen(pass) > 32) pass[32]='\0';
 		if(pass[0]=='\0')
 			throw error("Invalid password");
-		calc::obscure(pass);
+		calc::encrypt_password(pass);
 		if(strcmp(pass,this->pass)!=0)
 			throw error("Invalid password");
 	}
@@ -208,7 +208,7 @@ void player::login(char* pass)
 void player::setpass(char* pass)
 {
 	snprintf(this->pass,sizeof(this->pass),"%s",pass);
-	calc::obscure(this->pass);
+	calc::encrypt_password(this->pass);
 }
 
 void player::commit()

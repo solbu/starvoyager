@@ -98,7 +98,7 @@ planet* planet::pick(alliance* tali)
 	return NULL;
 }
 
-planet* planet::pickally(alliance* tali)
+planet* planet::find_allied_planet(alliance* tali)
 {
 	for(int i=0,j=0;i<ISIZE;i++)
 	{
@@ -109,7 +109,7 @@ planet* planet::pickally(alliance* tali)
 	return NULL;
 }
 
-planet* planet::pickhostile(alliance* tali)
+planet* planet::find_hostile_planet(alliance* tali)
 {
 	for(int i=0,j=0;i<ISIZE;i++)
 	{
@@ -183,7 +183,7 @@ void planet::shipyards()
 {
 	planet* tpln; //Planet to spawn at
 
-	if(ship::freeslot())
+	if(ship::has_available_ship_slot())
 	{
 		tpln=planets[calc::rnd(ISIZE)];
 		if(tpln && tpln->typ==INHABITED)
@@ -319,7 +319,7 @@ int planet::interact(char* txt,short cmod,short opr,ship* mshp)
 					txt+=sprintf(txt,"[%hd] %s \nCost: %ld C  Mass: %hd\n",i+1,sold[i]->nam,cost,sold[i]->mss);
 				}
 			}
-			txt+=sprintf(txt,"\nAvailable mass: %hd\n",mshp->freemass());
+			txt+=sprintf(txt,"\nAvailable mass: %hd\n",mshp->get_available_cargo_space());
 		}
 		if(opr>=1 && opr<=8 && sold[opr-1])
 		{
@@ -337,7 +337,7 @@ int planet::interact(char* txt,short cmod,short opr,ship* mshp)
 	return -1;
 }
 
-void planet::netout(int typ,unsigned char* buf)
+void planet::serialize_to_network(int typ,unsigned char* buf)
 {
 	buf[0]=typ;
 	buf+=1;

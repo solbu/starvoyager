@@ -23,7 +23,7 @@ void test_network_serialization() {
 		ship* test_ship = ship::libget(0);
 		if (test_ship) {
 			unsigned char buffer[256];
-			test_ship->netout(1, buffer);  // Test SERV_SELF type
+			test_ship->serialize_to_network(1, buffer);  // Test SERV_SELF type
 			TEST_ASSERT(true, "network serialization works");
 		} else {
 			TEST_ASSERT(true, "network serialization test skipped (no test ship)");
@@ -41,7 +41,7 @@ void test_password_encryption() {
 		char original[33];
 		strcpy(original, test_password);
 		
-		calc::obscure(test_password);
+		calc::encrypt_password(test_password);
 		
 		// Password should be changed after obscuring
 		TEST_ASSERT(strcmp(test_password, original) != 0, "password encryption changes string");
@@ -76,7 +76,7 @@ void test_collision_detection_renamed() {
 			cord test_location = {0, 0};
 			vect test_velocity = {0, 0};
 			
-			bool collision = test_ship->colldetect(test_location, test_velocity);
+			bool collision = test_ship->detect_collision(test_location, test_velocity);
 			TEST_ASSERT(collision == false || collision == true, "collision detection returns boolean");
 		} else {
 			TEST_ASSERT(true, "collision detection test skipped (no test ship)");
@@ -91,7 +91,7 @@ void test_equipment_reference_updates() {
 		// Test equipment reference updates (resequip function)
 		ship* test_ship = ship::libget(0);
 		if (test_ship) {
-			test_ship->resequip();
+			test_ship->update_equipment_references();
 			TEST_ASSERT(true, "equipment reference updates work");
 		} else {
 			TEST_ASSERT(true, "equipment reference test skipped (no test ship)");
@@ -124,8 +124,8 @@ void test_data_comparison_functions() {
 		unsigned char data2[4] = {1, 2, 3, 4};
 		unsigned char data3[4] = {1, 2, 3, 5};
 		
-		bool equal1 = calc::dateq(data1, data2, 4);
-		bool equal2 = calc::dateq(data1, data3, 4);
+		bool equal1 = calc::data_arrays_equal(data1, data2, 4);
+		bool equal2 = calc::data_arrays_equal(data1, data3, 4);
 		
 		TEST_ASSERT(equal1 == true, "identical data arrays compare equal");
 		TEST_ASSERT(equal2 == false, "different data arrays compare unequal");

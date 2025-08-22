@@ -36,10 +36,10 @@ ship::ship(cord loc,ship* lshp,alliance* tali,int aity)
 	is_crippled=false;
 	ply=NULL;
 	this->aity=aity;
-	resequip();
-	if(freemass()<=0)
+	update_equipment_references();
+	if(get_available_cargo_space()<=0)
 	{
-		error::debug(cls,freemass());
+		error::debug(cls,get_available_cargo_space());
 	}
 }
 
@@ -133,7 +133,7 @@ void ship::behaveall()
 	for(int i=0;i<ISIZE;i++)
 	{
 		if(ships[i] && !ships[i]->is_crippled) //Ships that exist and are non-crippled should do behaviour
-			ships[i]->behave();
+			ships[i]->execute_ai_behavior();
 	}
 	for(int i=0,j=0;i<10;i++)
 	{
@@ -180,7 +180,7 @@ void ship::loadall()
 			{
 				sprintf(obsc,"Ship%hd",i);
 				database::switchobj(obsc);
-				ships[i]->loadlink();
+				ships[i]->resolve_object_references();
 			}
 		}
 		catch(error it)
@@ -219,7 +219,7 @@ ship* ship::libget(int indx)
 	}
 }
 
-bool ship::freeslot()
+bool ship::has_available_ship_slot()
 {
 	for(int i=0;(i<(ISIZE-server::ISIZE));i++)
 		if(!ships[i])
@@ -566,11 +566,11 @@ int ship::interact(char* txt,short cmod,short opr,ship* player_ship)
 				else
 					txt+=sprintf(txt,"No fuel storage");
 
-				txt+=sprintf(txt,"\nAvailable mass: %hd\n",freemass());
+				txt+=sprintf(txt,"\nAvailable mass: %hd\n",get_available_cargo_space());
 
 				if(this==player_ship)
 				{
-//					txt+=sprintf(txt,"\nAvailable mass: %hd\n",freemass());
+//					txt+=sprintf(txt,"\nAvailable mass: %hd\n",get_available_cargo_space());
 					txt+=sprintf(txt,"\nCredits: %ld\n",ply->cashi);
 				}
 				if(this==player_ship->enem)
@@ -686,7 +686,7 @@ int ship::interact(char* txt,short cmod,short opr,ship* player_ship)
 					slots[selected_equipment_index].item=NULL;
 					slots[selected_equipment_index].rdy=0;
 					slots[selected_equipment_index].cap=0;
-					resequip();
+					update_equipment_references();
 				}
 			}
 		}
@@ -766,7 +766,7 @@ int ship::interact(char* txt,short cmod,short opr,ship* player_ship)
 	return -1;
 }
 
-int ship::freemass()
+int ship::get_available_cargo_space()
 {
 	int out; //Outputted free space
 
@@ -811,7 +811,7 @@ void ship::shieldsdown()
 		shield_generator->rdy=-1;
 }
 
-void ship::netout(int typ,unsigned char* buf)
+void ship::serialize_to_network(int typ,unsigned char* buf)
 {
 	buf[0]=typ;
 	buf+=1;
@@ -914,7 +914,7 @@ void ship::netout(int typ,unsigned char* buf)
 	}
 }
 
-bool ship::colldetect(cord fragment_location,vect fragment_velocity)
+bool ship::detect_collision(cord fragment_location,vect fragment_velocity)
 {
 	int rot; //Target rotation
 	double x1,y1,x2,y2,xx,yy; //Target bounding box
@@ -949,7 +949,7 @@ void ship::hit(int mag,cord fragment_location,vect fragment_velocity,ship* src)
 		shield_generator->cap-=mag;
 	server::registershake(this,mag/100);
 	if(src && enem!=src && !(all->opposes(src->all)) && src->ply)
-		src->lynch();
+		src->alert_nearby_ships();
 	if(shield_generator && shield_generator->cap>0)
 	{
 		try
@@ -1048,7 +1048,7 @@ void ship::assign(player* ply)
 	frnd=NULL;
 	is_crippled=false;
 	aity=AI_NULL;
-	resequip();
+	update_equipment_references();
 }
 
 long ship::purchase(int prch,short ripo,bool buy)
@@ -1107,7 +1107,7 @@ long ship::purchase(equip* prch,int ripo,bool buy)
 	if(!prch)
 		return 0;
 	cost=(prch->cost*ripo)/100;
-	if(buy && !(prch->mss>freemass()))
+	if(buy && !(prch->mss>get_available_cargo_space()))
 	{
 		for(int i=0;i<32;i++)
 		{
@@ -1119,7 +1119,7 @@ long ship::purchase(equip* prch,int ripo,bool buy)
 					slots[i].item=prch;
 					slots[i].cap=prch->cap;
 					slots[i].rdy=prch->rdy;
-					resequip();
+					update_equipment_references();
 					break;
 				}
 			}
@@ -1354,7 +1354,7 @@ void ship::load()
 	if(aity==-1)
 		aity=AI_NULL;
 
-	resequip();
+	update_equipment_references();
 }
 
 void ship::insert()
@@ -1444,7 +1444,7 @@ void ship::physics()
 }
 
 
-void ship::autonav(planet* target_planet)
+void ship::navigate_to_planet(planet* target_planet)
 {
 	vect vector_to_target; //Vector to target
 	pol polar_to_target; //Polar to target
@@ -1561,7 +1561,7 @@ void ship::follow(ship* target_ship)
 		turn(-1);
 }
 
-void ship::attackpattern(ship* target_ship,int str)
+void ship::execute_attack_maneuvers(ship* target_ship,int str)
 {
 	vect vector_to_target; //Vector to target
 	pol polar_to_target; //Polar to target
@@ -1630,7 +1630,7 @@ void ship::attackpattern(ship* target_ship,int str)
 		turn(-1);
 }
 
-void ship::loadlink()
+void ship::resolve_object_references()
 {
 	frnd=get(database::getvalue("FriendTarget"));
 	enem=get(database::getvalue("EnemyTarget"));
@@ -1717,7 +1717,7 @@ void ship::maintain()
 		delete this;
 }
 
-void ship::behave()
+void ship::execute_ai_behavior()
 {
 	int istr; //Individual strobe for this ship
 	bool amrt; //Run amortised cost code for this state?
@@ -1737,24 +1737,24 @@ void ship::behave()
 		if(enem)
 			follow(enem);
 		else if(plnt)
-			autonav(plnt);
+			navigate_to_planet(plnt);
 		break;
 
 		case AI_PATROLLER:
 		if(enem)
 		{
-			attackpattern(enem,istr);
-			firecontrol(istr);
+			execute_attack_maneuvers(enem,istr);
+			handle_weapon_targeting(istr);
 		}
 		else if(plnt)
-			autonav(plnt);
+			navigate_to_planet(plnt);
 
 		if(amrt)
 		{
 			if(!enem)
 			{
 				shieldsdown();
-				enem=pickhostile();
+				enem=find_hostile_target();
 			}
 			else
 			{
@@ -1774,11 +1774,11 @@ void ship::behave()
 		case AI_INVADER:
 		if(enem)
 		{
-			attackpattern(enem,istr);
-			firecontrol(istr);
+			execute_attack_maneuvers(enem,istr);
+			handle_weapon_targeting(istr);
 		}
 		else if(plnt)
-			autonav(plnt);
+			navigate_to_planet(plnt);
 
 		if(amrt)
 		{
@@ -1789,7 +1789,7 @@ void ship::behave()
 			if(!enem)
 			{
 				shieldsdown();
-				target_ship=pickhostile();
+				target_ship=find_hostile_target();
 				if(target_ship)
 				{
 					enem=target_ship;
@@ -1799,34 +1799,34 @@ void ship::behave()
 			else
 				shieldsup();
 			if(!enem && !plnt)
-				plnt=planet::pickhostile(all);
+				plnt=planet::find_hostile_planet(all);
 		}
 		break;
 
 		case AI_CARAVAN:
 		if(enem)
 		{
-			firecontrol(istr);
+			handle_weapon_targeting(istr);
 			if((plnt && istr<200) || !plnt)
-				attackpattern(enem,istr);
+				execute_attack_maneuvers(enem,istr);
 			else
-				autonav(plnt);
+				navigate_to_planet(plnt);
 		}
 		else if(plnt)
-			autonav(plnt);
+			navigate_to_planet(plnt);
 
 		if(amrt)
 		{
 			if(!enem)
 			{
 				shieldsdown();
-				enem=pickhostile();
+				enem=find_hostile_target();
 			}
 			else
 				shieldsup();
 			if(!plnt || all->opposes(plnt->all) || vel.rad<=5)
 			{
-				target_planet=planet::pickally(all);
+				target_planet=planet::find_allied_planet(all);
 				if(target_planet && target_planet->typ!=planet::STAR)
 					plnt=target_planet;
 			}
@@ -1836,8 +1836,8 @@ void ship::behave()
 		case AI_BUDDY:
 		if(enem)
 		{
-			attackpattern(enem,istr);	
-			firecontrol(istr);
+			execute_attack_maneuvers(enem,istr);	
+			handle_weapon_targeting(istr);
 		}
 		else if(frnd)
 			follow(frnd);
@@ -1853,7 +1853,7 @@ void ship::behave()
 					enem=NULL;
 			}
 			if(!enem)
-				enem=pickhostile();
+				enem=find_hostile_target();
 			if(frnd)
 			{
 				if(frnd->cloaking_device && frnd->cloaking_device->cap!=0)
@@ -1866,7 +1866,7 @@ void ship::behave()
 					frnd=NULL;
 			}
 			else
-				frnd=pickally();
+				frnd=find_allied_ship();
 		}
 		break;
 
@@ -1874,10 +1874,10 @@ void ship::behave()
 		if(enem)
 		{
 			if(shield_generator && shield_generator->cap<shield_generator->item->cap)
-				attackpattern(enem,istr);	
+				execute_attack_maneuvers(enem,istr);	
 			else if(frnd)
 				follow(frnd);
-			firecontrol(istr);
+			handle_weapon_targeting(istr);
 		}
 		else if(frnd)
 			follow(frnd);
@@ -1896,7 +1896,7 @@ void ship::behave()
 				if(frnd && frnd->enem)
 					enem=frnd->enem;
 				else
-					enem=pickhostile();
+					enem=find_hostile_target();
 		}
 			if(frnd)
 			{
@@ -1910,13 +1910,13 @@ void ship::behave()
 					frnd=NULL;
 			}
 			else
-				frnd=pickally();
+				frnd=find_allied_ship();
 		}
 		break;
 	}
 }
 
-ship* ship::pickhostile()
+ship* ship::find_hostile_target()
 {
         for(int i=0,j=0;i<ISIZE;i++)
         {
@@ -1927,7 +1927,7 @@ ship* ship::pickhostile()
         return NULL;
 }
 
-ship* ship::pickally()
+ship* ship::find_allied_ship()
 {
         for(int i=0,j=0;i<ISIZE;i++)
         {
@@ -1938,14 +1938,14 @@ ship* ship::pickally()
         return NULL;
 }
 
-void ship::lynch()
+void ship::alert_nearby_ships()
 {
 	for(int i=0;i<ISIZE;i++)
 		if(ships[i] && !ships[i]->ply && ships[i]!=this && !ships[i]->enem && ships[i]->see(this))
 			ships[i]->enem=this;
 }
 
-void ship::firecontrol(int str)
+void ship::handle_weapon_targeting(int str)
 {
 	if(enem && see(enem))
 	{
@@ -1958,7 +1958,7 @@ void ship::firecontrol(int str)
 	}
 }
 
-void ship::resequip()
+void ship::update_equipment_references()
 {
 	power_plant=NULL;
 	shield_generator=NULL;

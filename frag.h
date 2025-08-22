@@ -28,7 +28,7 @@ class frag //A frag object, like phaser fire, torpedo, debris
 	static void loadall(); //Load all frags from database
 	static frag* get(int indx); //Return the frag of given index
 
-	void netout(int typ,unsigned char* buf); //Get type of data from frag into a network buffer
+	void serialize_to_network(int typ,unsigned char* buf); //Get type of data from frag into a network buffer
 
 	int self; //Self index in the database
 	cord loc; //Position

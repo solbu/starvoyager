@@ -53,7 +53,7 @@ void calc::getspeed(long spd,char* put)
 		sprintf(put,"Warp %hd",j);
 }
 
-bool calc::dateq(unsigned char* d1,unsigned char* d2,int n)
+bool calc::data_arrays_equal(unsigned char* d1,unsigned char* d2,int n)
 {
 	for(int i=0;i<n;i++)
 		if(d1[i]!=d2[i])
@@ -61,7 +61,7 @@ bool calc::dateq(unsigned char* d1,unsigned char* d2,int n)
 	return true;		
 }
 
-void calc::obscure(char* str)
+void calc::encrypt_password(char* str)
 {
 	for(int i=0,j=strlen(str);i<j;i++)
 		str[i]+=i+1;
