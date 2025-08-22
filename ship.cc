@@ -32,8 +32,8 @@ ship::ship(cord loc,ship* lshp,alliance* tali,int aity)
 	vel.rad=0;
 	this->loc=loc;
 	this->all=tali;
-	mlck=true;
-	crip=false;
+	mass_locked=true;
+	is_crippled=false;
 	ply=NULL;
 	this->aity=aity;
 	resequip();
@@ -132,14 +132,14 @@ void ship::behaveall()
 	mstr=(mstr+1)%1000; //Increment the master strobe
 	for(int i=0;i<ISIZE;i++)
 	{
-		if(ships[i] && !ships[i]->crip) //Ships that exist and are non-crippled should do behaviour
+		if(ships[i] && !ships[i]->is_crippled) //Ships that exist and are non-crippled should do behaviour
 			ships[i]->behave();
 	}
 	for(int i=0,j=0;i<10;i++)
 	{
 		j=(mstr*(i+1))%ISIZE;
-		if(ships[j] && !ships[j]->crip) //Non-crippled ships need masslock checking periodically
-			ships[j]->mlck=planet::masslock(ships[j]->loc);
+		if(ships[j] && !ships[j]->is_crippled) //Non-crippled ships need masslock checking periodically
+			ships[j]->mass_locked=planet::masslock(ships[j]->loc);
 	}
 }
 
@@ -232,9 +232,9 @@ void ship::turn(int dir)
 	if(power_plant && power_plant->cap>0)
 	{
 		if(dir==+1)
-			vel.ang+=trn;
+			vel.ang+=turn_rate;
 		if(dir==-1)
-			vel.ang-=trn;
+			vel.ang-=turn_rate;
 		if(vel.ang>=360)
 			vel.ang-=360;
 		if(vel.ang<0)
@@ -252,12 +252,12 @@ void ship::accel(int dir,bool wrp)
 	if(vel.rad>99)
 	{
 		if(dir==+1)
-			nsp=vel.rad+awp;
+			nsp=vel.rad+warp_acceleration;
 		if(dir==-1)
-			nsp=vel.rad-awp;
+			nsp=vel.rad-warp_acceleration;
 		if(nsp<100) {
 			if(wrp)
-				nsp=mip;
+				nsp=max_impulse_speed;
 			else
 				nsp=100;
 		}
@@ -268,36 +268,36 @@ void ship::accel(int dir,bool wrp)
 	{
 		if(dir==+1)
 		{
-			nsp=vel.rad+aip;
+			nsp=vel.rad+impulse_acceleration;
 		}
 		if(dir==-1)
 		{
-			nsp=vel.rad-aip;
+			nsp=vel.rad-impulse_acceleration;
 		}
-		if(nsp>mip)
+		if(nsp>max_impulse_speed)
 		{
 			if(wrp)
 				nsp=100;
 			else
-				nsp=mip;
+				nsp=max_impulse_speed;
 		}
 	}
 
-	if(nsp>mip && nsp<100)
-		nsp=mip;
-	if(nsp>mwp)
-		nsp=mwp;
+	if(nsp>max_impulse_speed && nsp<100)
+		nsp=max_impulse_speed;
+	if(nsp>max_warp_speed)
+		nsp=max_warp_speed;
 
-	if(nsp<-(mip/3)) //Prevent going faster backwards than reverse speed
-		nsp=-mip/3;
+	if(nsp<-(max_impulse_speed/3)) //Prevent going faster backwards than reverse speed
+		nsp=-max_impulse_speed/3;
 
 	if(nsp<0 && !wrp && vel.rad>=0) //Prevent moving into reverse if transition not specified
 		nsp=0;
 
 	if(nsp>=100)
-		pcon=(int)(((vel.rad-nsp)*mss)/2000);
+		pcon=(int)(((vel.rad-nsp)*mass)/2000);
 	else
-		pcon=(int)(((vel.rad-nsp)*mss)/2);
+		pcon=(int)(((vel.rad-nsp)*mass)/2);
 	if(pcon<0)
 		pcon=-pcon;
 	if((nsp>=100 && vel.rad<100) || (nsp<100 && vel.rad>=100))
@@ -551,7 +551,7 @@ int ship::interact(char* txt,short cmod,short opr,ship* mshp)
 					txt+=sprintf(txt,"\nShields: Raised\n");
 				else
 					txt+=sprintf(txt,"\nShields: Down\n");
-				calc::getspeed(mwp,spd);
+				calc::getspeed(max_warp_speed,spd);
 				txt+=sprintf(txt,"Maximum velocity: %s\n",spd);
 				if(shield_generator)
 					txt+=sprintf(txt,"Shield capability: %ld\n",shield_generator->item->cap);
@@ -593,14 +593,14 @@ int ship::interact(char* txt,short cmod,short opr,ship* mshp)
 
 		
 		case CMOD_EQUIP:
-		if(!(esel>=0 && esel<32 && slots[esel].item))
+		if(!(selected_equipment_index>=0 && selected_equipment_index<32 && slots[selected_equipment_index].item))
 		{
-			esel=-1;
+			selected_equipment_index=-1;
 			for(int i=0;i<32;i++)
 			{
 				if(slots[i].item)
 				{
-					esel=i;
+					selected_equipment_index=i;
 					break;
 				}
 			}
@@ -613,17 +613,17 @@ int ship::interact(char* txt,short cmod,short opr,ship* mshp)
 				if(slots[i].item)
 				{
 					if(slots[i].item->typ==equip::LAUNCHER)
-						if(i==esel)
+						if(i==selected_equipment_index)
 							txt+=sprintf(txt,">%s [%ld]<\n",slots[i].item->nam,slots[i].cap);
 						else
 							txt+=sprintf(txt," %s [%ld]\n",slots[i].item->nam,slots[i].cap);
 					else if(slots[i].item->typ==equip::FUELTANK && slots[i].cap==0)
-						if(i==esel)
+						if(i==selected_equipment_index)
 							txt+=sprintf(txt,">%s< [empty]\n",slots[i].item->nam);
 						else
 							txt+=sprintf(txt," %s [empty]\n",slots[i].item->nam);
 					else
-						if(i==esel)
+						if(i==selected_equipment_index)
 							txt+=sprintf(txt,">%s<\n",slots[i].item->nam);
 						else
 							txt+=sprintf(txt," %s\n",slots[i].item->nam);
@@ -661,31 +661,31 @@ int ship::interact(char* txt,short cmod,short opr,ship* mshp)
 		}
 		if(opr==3)
 		{
-			for(int i=0,j=esel+1;i<32;i++,j++)
+			for(int i=0,j=selected_equipment_index+1;i<32;i++,j++)
 			{
 				if(j>=32)
 					j=0;
 				if(slots[j].item)
 				{
-					esel=j;
+					selected_equipment_index=j;
 					break;
 				}
 			}
 		}
 		if(opr==4)
 		{
-			if(esel>=0 && esel<32 && slots[esel].item)
+			if(selected_equipment_index>=0 && selected_equipment_index<32 && slots[selected_equipment_index].item)
 			{
-				if(slots[esel].item->typ==equip::TRANSPORTER)
+				if(slots[selected_equipment_index].item->typ==equip::TRANSPORTER)
 				{
 					sprintf(txt,"Cannot jettison transporters");
 				}
 				else
 				{
-					sprintf(txt,"%s jettisoned",slots[esel].item->nam);
-					slots[esel].item=NULL;
-					slots[esel].rdy=0;
-					slots[esel].cap=0;
+					sprintf(txt,"%s jettisoned",slots[selected_equipment_index].item->nam);
+					slots[selected_equipment_index].item=NULL;
+					slots[selected_equipment_index].rdy=0;
+					slots[selected_equipment_index].cap=0;
 					resequip();
 				}
 			}
@@ -693,7 +693,7 @@ int ship::interact(char* txt,short cmod,short opr,ship* mshp)
 		break;
 
 		case CMOD_HAIL:
-		if(crip)
+		if(is_crippled)
 		{
 			if(opr==-1)
 			{
@@ -770,7 +770,7 @@ int ship::freemass()
 {
 	int out; //Outputted free space
 
-	out=mss;
+	out=mass;
 	for(int i=0;i<32;i++)
 	{
 		if(slots[i].item)
@@ -821,8 +821,8 @@ void ship::netout(int typ,unsigned char* buf)
 	switch(typ)
 	{
 		case SERV_SELF:
-		if(mss>0)
-			calc::inttodat((100*hul)/mhul,buf);
+		if(mass>0)
+			calc::inttodat((100*hull_integrity)/max_hull_integrity,buf);
 		else
 			calc::inttodat(0,buf);
 		buf+=2;
@@ -985,14 +985,14 @@ void ship::hit(int mag,cord frgl,vect frgv,ship* src)
 	}
 
 	if(shield_generator && shield_generator->cap!=-10)
-		hul-=(mag*4)/(shield_generator->cap+10);
+		hull_integrity-=(mag*4)/(shield_generator->cap+10);
 	else
-		hul-=(mag*4)/10;
+		hull_integrity-=(mag*4)/10;
 
-	if(hul<=0)
+	if(hull_integrity<=0)
 	{
-		hul=0;
-		ndeb=mss/8+4;
+		hull_integrity=0;
+		ndeb=mass/8+4;
 		if(ndeb>70)
 			ndeb=70;
 		for(int i=0;i<ndeb;i++)
@@ -1024,7 +1024,7 @@ void ship::hit(int mag,cord frgl,vect frgv,ship* src)
 		if(src && src->ply && src->all->opposes(all))
 		{
 			server::hail(NULL,src->ply,"Target destroyed; bounty paid");
-			src->ply->credit(mss/2);
+			src->ply->credit(mass/2);
 		}
 		server::registernoise(this,dsnd);
 		if(ply)
@@ -1033,10 +1033,10 @@ void ship::hit(int mag,cord frgl,vect frgv,ship* src)
 	}
 	else
 	{
-		if(hul<mhul/2 && src && src->ply && !ply && !crip)
+		if(hull_integrity<max_hull_integrity/2 && src && src->ply && !ply && !is_crippled)
 		{
 			server::hail(NULL,src->ply,"Target crippled");
-			crip=true;
+			is_crippled=true;
 		}
 	}
 }
@@ -1046,7 +1046,7 @@ void ship::assign(player* ply)
 	this->ply=ply;
 	enem=NULL;
 	frnd=NULL;
-	crip=false;
+	is_crippled=false;
 	aity=AI_NULL;
 	resequip();
 }
@@ -1090,11 +1090,11 @@ long ship::purchase(int prch,short ripo,bool buy)
 	}
 	if(prch==PRCH_HULL)
 	{
-		cost=((mhul-hul)*ripo)/100;
+		cost=((max_hull_integrity-hull_integrity)*ripo)/100;
 		if(buy)
 		{
 			ply->debit(cost);
-			hul=mhul;
+			hull_integrity=max_hull_integrity;
 		}
 	}
 	return cost;
@@ -1208,22 +1208,22 @@ void ship::save()
 	database::putvalue("YLoc",loc.y);
 	database::putvalue("Heading",vel.ang);
 	database::putvalue("Speed",vel.rad);
-	database::putvalue("TurnRate",trn);
-	database::putvalue("SublightLimit",mip);
-	database::putvalue("SublightAcceleration",aip*10);
-	database::putvalue("WarpLimit",mwp);
-	database::putvalue("WarpAcceleration",awp);
-	database::putvalue("Mass",mss);
-	database::putvalue("HullStrength",hul);
-	database::putvalue("HullStrengthLimit",mhul);
+	database::putvalue("TurnRate",turn_rate);
+	database::putvalue("SublightLimit",max_impulse_speed);
+	database::putvalue("SublightAcceleration",impulse_acceleration*10);
+	database::putvalue("WarpLimit",max_warp_speed);
+	database::putvalue("WarpAcceleration",warp_acceleration);
+	database::putvalue("Mass",mass);
+	database::putvalue("HullStrength",hull_integrity);
+	database::putvalue("HullStrengthLimit",max_hull_integrity);
 	if(frnd)
 		database::putvalue("FriendTarget",frnd->self);
 	if(enem)
 		database::putvalue("EnemyTarget",enem->self);
 	if(plnt)
 		database::putvalue("PlanetTarget",plnt->self);
-	database::putvalue("MassLock",mlck);
-	database::putvalue("Crippled",crip);
+	database::putvalue("MassLock",mass_locked);
+	database::putvalue("Crippled",is_crippled);
 	for(int i=0;i<32;i++)
 	{
 		if(slots[i].item || slots[i].pos.rad!=-1)
@@ -1292,19 +1292,19 @@ void ship::load()
 	loc.y=database::getvalue("YLoc");
 	vel.ang=database::getvalue("Heading");
 	vel.rad=database::getvalue("Speed");
-	trn=database::getvalue("TurnRate");
-	mip=database::getvalue("SublightLimit");
-	aip=(double)database::getvalue("SublightAcceleration")/10;
-	mwp=database::getvalue("WarpLimit");
-	awp=database::getvalue("WarpAcceleration");
-	mss=database::getvalue("Mass");
-	hul=database::getvalue("HullStrength");
-	mhul=database::getvalue("HullStrengthLimit");
+	turn_rate=database::getvalue("TurnRate");
+	max_impulse_speed=database::getvalue("SublightLimit");
+	impulse_acceleration=(double)database::getvalue("SublightAcceleration")/10;
+	max_warp_speed=database::getvalue("WarpLimit");
+	warp_acceleration=database::getvalue("WarpAcceleration");
+	mass=database::getvalue("Mass");
+	hull_integrity=database::getvalue("HullStrength");
+	max_hull_integrity=database::getvalue("HullStrengthLimit");
 	
-	mlck=database::getvalue("MassLock");
-	crip=database::getvalue("Crippled");
+	mass_locked=database::getvalue("MassLock");
+	is_crippled=database::getvalue("Crippled");
 
-	esel=-1;
+	selected_equipment_index=-1;
 	for(int i=0;i<32;i++)
 	{
 		// Initialize slot to safe defaults
@@ -1340,8 +1340,8 @@ void ship::load()
 		}
 	}
 
-	if(hul==-1)
-		hul=mhul;
+	if(hull_integrity==-1)
+		hull_integrity=max_hull_integrity;
 	ply=NULL;
 
 	mov.xx=0;
@@ -1404,11 +1404,11 @@ void ship::physics()
 	vect nmov; //New movement vector
 
 	//Slow down vessels at warp under masslock influence
-	if(vel.rad>=100 && mlck)
-		vel.rad=mip;
+	if(vel.rad>=100 && mass_locked)
+		vel.rad=max_impulse_speed;
 	//Handle ships in between warp 1 and maximum impulse
-	if(vel.rad<100 && vel.rad>mip)
-		vel.rad=mip;
+	if(vel.rad<100 && vel.rad>max_impulse_speed)
+		vel.rad=max_impulse_speed;
 
 	//Handle ships going beyond the boundaries of the 'universe'; they bounce
 	if(loc.x>LIMIT || loc.x<-LIMIT || loc.y>LIMIT || loc.y<-LIMIT)
@@ -1427,10 +1427,10 @@ void ship::physics()
 		loc.y=-LIMIT;
 	
 	nmov=vel.tovect();
-	if(vel.rad<100 && (mss/100)!=0)
+	if(vel.rad<100 && (mass/100)!=0)
 	{
-		mov.xx+=(nmov.xx-mov.xx)/(mss/100);
-		mov.yy+=(nmov.yy-mov.yy)/(mss/100);
+		mov.xx+=(nmov.xx-mov.xx)/(mass/100);
+		mov.yy+=(nmov.yy-mov.yy)/(mass/100);
 		//loc.x+=(nmov.xx-mov.xx);
 		//loc.y+=(nmov.yy-mov.yy);
 	}
@@ -1462,7 +1462,7 @@ void ship::autonav(planet* tpln)
 	if(dd<-180)
 		dd=dd+360; //Evaluate angle between current heading and target bearing
 
-	tol=trn+2;
+	tol=turn_rate+2;
 	if(vel.rad<=5) 
 		tol=20; //Low speed; not too fussed about fine direction finding
 
@@ -1478,16 +1478,16 @@ void ship::autonav(planet* tpln)
 	{
 		if(vel.rad>=100)
 		{
-			if(vel.rad<sqrt(2*awp*ptrg.rad)-awp)
+			if(vel.rad<sqrt(2*warp_acceleration*ptrg.rad)-warp_acceleration)
 				accel(+1,true);
-			else if(vel.rad>sqrt(2*awp*ptrg.rad)+awp)
+			else if(vel.rad>sqrt(2*warp_acceleration*ptrg.rad)+warp_acceleration)
 				accel(-1,true);
 		}
 		else
 		{
-			if(vel.rad<(sqrt(2*aip*ptrg.rad)-aip))  //Intended speed is sqrt(2as)
+			if(vel.rad<(sqrt(2*impulse_acceleration*ptrg.rad)-impulse_acceleration))  //Intended speed is sqrt(2as)
 				accel(+1,true);
-			else if(vel.rad>(sqrt(3*aip*ptrg.rad))+aip)
+			else if(vel.rad>(sqrt(3*impulse_acceleration*ptrg.rad))+impulse_acceleration)
 				accel(-1,true);
 		}
 	}
@@ -1523,7 +1523,7 @@ void ship::follow(ship* tshp)
 	if(!see(tshp))
 		ptrg.rad-=(sensor_array ? sensor_array->item->rng : 1000)/3; //If you can't see the target, stand off a little
 
-	tol=trn*2+2;
+	tol=turn_rate*2+2;
 	if(vel.rad<=5) 
 		tol=20; //Low speed; not too fussed about fine direction finding
 
@@ -1539,16 +1539,16 @@ void ship::follow(ship* tshp)
 	{
 		if(vel.rad>=100)
 		{
-			if(vel.rad<sqrt(2*awp*ptrg.rad)-awp)
+			if(vel.rad<sqrt(2*warp_acceleration*ptrg.rad)-warp_acceleration)
 				accel(+1,true);
-			else if(vel.rad>sqrt(2*awp*ptrg.rad)+awp)
+			else if(vel.rad>sqrt(2*warp_acceleration*ptrg.rad)+warp_acceleration)
 				accel(-1,true);
 		}
 		else
 		{
-			if(vel.rad<(sqrt(2*aip*ptrg.rad)-2*aip))  //Intended speed is sqrt(2as)
+			if(vel.rad<(sqrt(2*impulse_acceleration*ptrg.rad)-2*impulse_acceleration))  //Intended speed is sqrt(2as)
 				accel(+1,true);
-			else if(vel.rad>(sqrt(2*aip*ptrg.rad)+2*aip))
+			else if(vel.rad>(sqrt(2*impulse_acceleration*ptrg.rad)+2*impulse_acceleration))
 				accel(-1,true);
 		}
 	}
@@ -1592,7 +1592,7 @@ void ship::attackpattern(ship* tshp,int str)
 
 	if(!see(tshp))
 		ptrg.rad-=(sensor_array ? sensor_array->item->rng : 1000)/3; //If you can't see the target, stand off a little
-	tol=trn*2+2;
+	tol=turn_rate*2+2;
 
 	if(vel.rad<=5) 
 		tol=20; //Low speed; not too fussed about fine direction finding
@@ -1609,14 +1609,14 @@ void ship::attackpattern(ship* tshp,int str)
 	{
 		if(vel.rad>=100)
 		{
-			if(ptrg.rad && (ptrg.rad/vel.rad) && ((vel.rad)/(12*ptrg.rad/vel.rad))>=awp-30)
+			if(ptrg.rad && (ptrg.rad/vel.rad) && ((vel.rad)/(12*ptrg.rad/vel.rad))>=warp_acceleration-30)
 				accel(-1,true);
 			else
 				accel(+1,true);
 		}
 		else
 		{
-			if(ptrg.rad && ((5*vel.rad*vel.rad)/(ptrg.rad))>=aip)
+			if(ptrg.rad && ((5*vel.rad*vel.rad)/(ptrg.rad))>=impulse_acceleration)
 				accel(-1,true);
 			else
 				accel(+1,true);
@@ -1639,7 +1639,7 @@ void ship::loadlink()
 
 void ship::maintain()
 {
-	if(crip)
+	if(is_crippled)
 	{
 		if(shield_generator)
 			shield_generator->rdy=-1;	
@@ -1695,8 +1695,8 @@ void ship::maintain()
 	{
 		if(cloaking_device->rdy==0)
 		{
-			if(power_plant && (power_plant->cap)>=(cloaking_device->item->pow*mss)/20)
-				power_plant->cap-=(cloaking_device->item->pow*mss)/20;
+			if(power_plant && (power_plant->cap)>=(cloaking_device->item->pow*mass)/20)
+				power_plant->cap-=(cloaking_device->item->pow*mass)/20;
 			else
 				uncloak();
 			if(cloaking_device->cap<cloaking_device->item->cap)

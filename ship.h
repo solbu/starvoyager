@@ -112,14 +112,14 @@ class ship //Spaceship type in game
 	int fsnd; //Frag sound
 	int dsnd; //Destruction sound
 	pol vel; //Velocity
-	int trn; //Turning speed
-	double mip; //Maximum impulse velocity (<100)
-	double aip; //Impulse acceleration
-	double mwp; //Maximum warp velocity
-	double awp; //Warp acceleration
-	int mss; //Mass
-	int hul; //Hull integrity
-	int mhul; //Maximum hull integrity
+	int turn_rate; //Turning speed
+	double max_impulse_speed; //Maximum impulse velocity (<100)
+	double impulse_acceleration; //Impulse acceleration
+	double max_warp_speed; //Maximum warp velocity
+	double warp_acceleration; //Warp acceleration
+	int mass; //Mass
+	int hull_integrity; //Hull integrity
+	int max_hull_integrity; //Maximum hull integrity
 	
 	slot* power_plant; //Power plant
 	slot* shield_generator; //Shield generator
@@ -127,8 +127,8 @@ class ship //Spaceship type in game
 	slot* cloaking_device; //Cloaking device
 	slot* fuel_tank; //Fuel tank
 	
-	int esel; //Equipment selection
+	int selected_equipment_index; //Equipment selection
 	slot slots[32]; //Equipment
-	bool mlck; //Mass locked?
-	bool crip; //Crippled?
+	bool mass_locked; //Mass locked?
+	bool is_crippled; //Crippled?
 };
