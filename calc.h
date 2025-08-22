@@ -229,6 +229,6 @@ class calc //Mathematics module
 		static void encrypt_password(char* str); //Munges the string so it is no longer human readable; the munging is consisten, like a very weak crypt
 
         private:
-        static long wrp[10]; //Warp speed table
-        static char spds[33]; //Speed string (saves having to malloc, but it ain't threadsafe!)
+        static long warp_speed_table[10]; //Warp speed table
+        static char speed_string_buffer[33]; //Speed string (saves having to malloc, but it ain't threadsafe!)
 };

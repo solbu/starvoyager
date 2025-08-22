@@ -19,7 +19,7 @@ void calc::init()
 {
 	for(int i=0;i<10;i++)
 	{
-		wrp[i]=i*i*i*100;
+		warp_speed_table[i]=i*i*i*100;
 	}
 	srand(os::getseed());
 }
@@ -38,7 +38,7 @@ void calc::getspeed(long spd,char* put)
 	j=0;
 	for(int i=9;i>=0;i--)
 	{
-		if(spd>=wrp[i])
+		if(spd>=warp_speed_table[i])
 		{
 			j=i;
 			break;
@@ -67,5 +67,5 @@ void calc::encrypt_password(char* str)
 		str[i]+=i+1;
 }
 
-long calc::wrp[10];
-char calc::spds[33];
+long calc::warp_speed_table[10];
+char calc::speed_string_buffer[33];

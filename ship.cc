@@ -72,6 +72,10 @@ ship::~ship()
 		ply->notifydelete();
 }
 
+// ============================================================================
+// SHIP CREATION AND MANAGEMENT
+// ============================================================================
+
 void ship::init()
 {
 	for(int i=0;i<ISIZE;i++)
@@ -129,7 +133,7 @@ void ship::simulateall()
 
 void ship::behaveall()
 {
-	mstr=(mstr+1)%1000; //Increment the master strobe
+	master_strobe=(master_strobe+1)%1000; //Increment the master strobe
 	for(int i=0;i<ISIZE;i++)
 	{
 		if(ships[i] && !ships[i]->is_crippled) //Ships that exist and are non-crippled should do behaviour
@@ -137,7 +141,7 @@ void ship::behaveall()
 	}
 	for(int i=0,j=0;i<10;i++)
 	{
-		j=(mstr*(i+1))%ISIZE;
+		j=(master_strobe*(i+1))%ISIZE;
 		if(ships[j] && !ships[j]->is_crippled) //Non-crippled ships need masslock checking periodically
 			ships[j]->mass_locked=planet::masslock(ships[j]->loc);
 	}
@@ -309,6 +313,10 @@ void ship::accel(int dir,bool wrp)
 		vel.rad=nsp;
 	}
 }
+
+// ============================================================================
+// SHIP COMBAT SYSTEMS
+// ============================================================================
 
 void ship::shoot(bool torp)
 {
@@ -1399,6 +1407,10 @@ ship::ship(int self)
 	insert(self);
 }
 
+// ============================================================================
+// SHIP PHYSICS AND MOVEMENT
+// ============================================================================
+
 void ship::physics()
 {
 	vect nmov; //New movement vector
@@ -1717,18 +1729,32 @@ void ship::maintain()
 		delete this;
 }
 
+// ============================================================================
+// SHIP AI BEHAVIOR SYSTEMS
+// ============================================================================
+//
+// AI Behavior Types:
+// - AI_NULL: No AI behavior (player controlled)
+// - AI_AUTOPILOT: Navigate to selected planet
+// - AI_PATROLLER: Patrol area and engage hostiles
+// - AI_INVADER: Aggressive attack behavior
+// - AI_CARAVAN: Trade route behavior
+// - AI_BUDDY: Follow and assist allied ships
+// - AI_FLEET: Coordinated fleet behavior
+//
+
 void ship::execute_ai_behavior()
 {
-	int istr; //Individual strobe for this ship
-	bool amrt; //Run amortised cost code for this state?
+	int individual_strobe; //Individual strobe for this ship
+	bool run_amortized_code; //Run amortised cost code for this state?
 	planet* target_planet; //A planet for use in ai code
 	ship* target_ship; //A ship for use in ai code
 
-	istr=(mstr+self*7)%400;
-	if(istr%40==0)
-		amrt=true;
+	individual_strobe=(master_strobe+self*7)%400;
+	if(individual_strobe%40==0)
+		run_amortized_code=true;
 	else
-		amrt=false;
+		run_amortized_code=false;
 
 	//Run behaviours for each case of this ship's behaviour state
 	switch(aity)
@@ -1743,13 +1769,13 @@ void ship::execute_ai_behavior()
 		case AI_PATROLLER:
 		if(enem)
 		{
-			execute_attack_maneuvers(enem,istr);
-			handle_weapon_targeting(istr);
+			execute_attack_maneuvers(enem,individual_strobe);
+			handle_weapon_targeting(individual_strobe);
 		}
 		else if(plnt)
 			navigate_to_planet(plnt);
 
-		if(amrt)
+		if(run_amortized_code)
 		{
 			if(!enem)
 			{
@@ -1774,13 +1800,13 @@ void ship::execute_ai_behavior()
 		case AI_INVADER:
 		if(enem)
 		{
-			execute_attack_maneuvers(enem,istr);
-			handle_weapon_targeting(istr);
+			execute_attack_maneuvers(enem,individual_strobe);
+			handle_weapon_targeting(individual_strobe);
 		}
 		else if(plnt)
 			navigate_to_planet(plnt);
 
-		if(amrt)
+		if(run_amortized_code)
 		{
 			if(plnt)
 				cloak();
@@ -1806,16 +1832,16 @@ void ship::execute_ai_behavior()
 		case AI_CARAVAN:
 		if(enem)
 		{
-			handle_weapon_targeting(istr);
-			if((plnt && istr<200) || !plnt)
-				execute_attack_maneuvers(enem,istr);
+			handle_weapon_targeting(individual_strobe);
+			if((plnt && individual_strobe<200) || !plnt)
+				execute_attack_maneuvers(enem,individual_strobe);
 			else
 				navigate_to_planet(plnt);
 		}
 		else if(plnt)
 			navigate_to_planet(plnt);
 
-		if(amrt)
+		if(run_amortized_code)
 		{
 			if(!enem)
 			{
@@ -1836,13 +1862,13 @@ void ship::execute_ai_behavior()
 		case AI_BUDDY:
 		if(enem)
 		{
-			execute_attack_maneuvers(enem,istr);	
-			handle_weapon_targeting(istr);
+			execute_attack_maneuvers(enem,individual_strobe);	
+			handle_weapon_targeting(individual_strobe);
 		}
 		else if(frnd)
 			follow(frnd);
 
-		if(amrt)
+		if(run_amortized_code)
 		{
 			if(!enem)
 				shieldsdown();
@@ -1874,15 +1900,15 @@ void ship::execute_ai_behavior()
 		if(enem)
 		{
 			if(shield_generator && shield_generator->cap<shield_generator->item->cap)
-				execute_attack_maneuvers(enem,istr);	
+				execute_attack_maneuvers(enem,individual_strobe);	
 			else if(frnd)
 				follow(frnd);
-			handle_weapon_targeting(istr);
+			handle_weapon_targeting(individual_strobe);
 		}
 		else if(frnd)
 			follow(frnd);
 
-		if(amrt)
+		if(run_amortized_code)
 		{
 			if(!enem)
 				shieldsdown();
@@ -1958,6 +1984,10 @@ void ship::handle_weapon_targeting(int str)
 	}
 }
 
+// ============================================================================
+// SHIP EQUIPMENT MANAGEMENT
+// ============================================================================
+
 void ship::update_equipment_references()
 {
 	power_plant=NULL;
@@ -1996,6 +2026,10 @@ void ship::update_equipment_references()
 	}
 }
 
+// ============================================================================
+// SHIP CLASS - STATIC DATA AND INITIALIZATION
+// ============================================================================
+
 ship* ship::ships[ISIZE];
 ship* ship::lib[LIBSIZE];
-int ship::mstr;
+int ship::master_strobe;

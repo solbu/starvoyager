@@ -105,7 +105,7 @@ class ship //Spaceship type in game
 
 	static ship* ships[ISIZE]; //Main ship list
 	static ship* lib[LIBSIZE]; //Ship library
-	static int mstr; //Master strobe and individual strobe, used for periodic behaviours
+	static int master_strobe; //Master strobe and individual strobe, used for periodic behaviours
 
 	int w[36],h[36]; //Width and height (halved)
 	int fspr; //Frag sprite
