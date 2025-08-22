@@ -1,8 +1,37 @@
 {
+    "makefile.configurations": [
+        {
+            "name": "Debug",
+            "buildDirectory": "${workspaceFolder}/build/debug",
+            "makefilePath": "${workspaceFolder}/Makefile",
+            "buildArgs": [],
+            "cleanArgs": [],
+            "buildTarget": "all",
+            "cleanTarget": "clean"
+        },
+        {
+            "name": "Release",
+            "buildDirectory": "${workspaceFolder}/build/release",
+            "makefilePath": "${workspaceFolder}/Makefile",
+            "buildArgs": ["CFLAGS=-O2"],
+            "cleanArgs": [],
+            "buildTarget": "all",
+            "cleanTarget": "clean"
+        }
+    ],
     "makefile.launchConfigurations": [
         {
-            "cwd": "/home/mcgarrah/github/starvoyager",
-            "binaryPath": "/home/mcgarrah/github/starvoyager/starvoyager",
+            "name": "Star Voyager Debug",
+            "cwd": "${workspaceFolder}",
+            "args": [],
+            "binaryPath": "${workspaceFolder}/starvoyager",
+            "binaryArgs": []
+        },
+        {
+            "name": "Star Voyager Debug (server)",
+            "cwd": "${workspaceFolder}",
+            "args": ["-s"],
+            "binaryPath": "${workspaceFolder}/starvoyager",
             "binaryArgs": []
         }
     ],
