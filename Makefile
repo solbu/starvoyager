@@ -27,7 +27,7 @@ DEPDIR := .deps
 DEPFLAGS = -MT $@ -MMD -MP -MF $(DEPDIR)/$*.d
 
 .SUFFIXES: .c .cc
-.PHONY: all clean install install-data install-bin uninstall binary dist test test-headless test-quick check distclean
+.PHONY: all clean install install-data install-bin uninstall binary dist test test-headless test-quick check distclean coverage
 
 all: starvoyager
 
@@ -108,6 +108,17 @@ test-headless:
 
 test-quick:
 	./run_tests.sh --quick
+
+# Code coverage target
+coverage: CFLAGS += --coverage -O0 -g
+coverage: LIBS += --coverage
+coverage: clean all
+	@echo "Running tests with coverage..."
+	./run_tests.sh
+	lcov --capture --directory . --output-file coverage.info
+	lcov --remove coverage.info '/usr/*' --output-file coverage.info
+	genhtml coverage.info --output-directory coverage_report
+	@echo "Coverage report generated in coverage_report/index.html"
 
 # Include automatic dependencies
 include $(wildcard $(DEPDIR)/*.d)

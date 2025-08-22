@@ -2,6 +2,10 @@
 autom4te.cache/
 *.log
 *.o
+*.gcno
+*.gcda
+coverage.info
+coverage_report/
 starvoyager
 tests/starvoyager-tests
 tests/debug-test

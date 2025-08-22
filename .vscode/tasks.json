@@ -37,6 +37,23 @@
       "dependsOrder": "sequence",
       "dependsOn": ["clean", "build"],
       "group": "build"
+    },
+    {
+      "label": "Generate Coverage Report",
+      "type": "shell",
+      "command": "make",
+      "args": ["coverage"],
+      "options": {
+        "cwd": "${workspaceFolder}"
+      },
+      "group": "test",
+      "presentation": {
+        "echo": true,
+        "reveal": "always",
+        "focus": false,
+        "panel": "shared"
+      },
+      "problemMatcher": []
     }
   ]
 }
