@@ -3,4 +3,6 @@ autom4te.cache/
 *.log
 *.o
 starvoyager
+tests/starvoyager-tests
+tests/debug-test
 *.tar.gz
