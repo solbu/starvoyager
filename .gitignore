@@ -6,3 +6,5 @@ starvoyager
 tests/starvoyager-tests
 tests/debug-test
 *.tar.gz
+.deps/
+tests/.deps/

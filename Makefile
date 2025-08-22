@@ -21,8 +21,13 @@ CFLAGS += -O2
 endif
 #CFLAGS:=`sdl-config --cflags` -ggdb3 -Wall -Werror -ansi -pedantic
 PACKAGENAME=$(NAME)-$(VERSION)-`uname -m`-`uname|tr [A-Z] [a-z]`.bin
+
+# Automatic dependency generation
+DEPDIR := .deps
+DEPFLAGS = -MT $@ -MMD -MP -MF $(DEPDIR)/$*.d
+
 .SUFFIXES: .c .cc
-.PHONY: all clean install install-data install-bin uninstall binary dist test test-headless test-quick
+.PHONY: all clean install install-data install-bin uninstall binary dist test test-headless test-quick check distclean
 
 all: starvoyager
 
@@ -44,7 +49,8 @@ SDL_gfxBlitFunc.o: SDL_gfxBlitFunc.c
 	$(CC) `sdl-config --cflags` -w -c -o SDL_gfxBlitFunc.o SDL_gfxBlitFunc.c
 
 .cc.o:
-	$(CPPC) $(CFLAGS) -DPOSIX -DVERSION=\"${VERSION}\" -DDATADIR=\"${DATADIR}\" -c -o $@ $<
+	@mkdir -p $(DEPDIR)
+	$(CPPC) $(DEPFLAGS) $(CFLAGS) -DPOSIX -DVERSION=\"${VERSION}\" -DDATADIR=\"${DATADIR}\" -c -o $@ $<
 
 	
 #Installing
@@ -52,9 +58,11 @@ install:  install-data install-bin
 
 
 install-data: all
-	rm $(DATADIR) -rf
-	rm $(DOCDIR) -rf
-	mkdir -p $(DOCDIR) $(DATADIR)/gfx $(DATADIR)/snd 
+	test -n "$(DATADIR)" && test "$(DATADIR)" != "/" && test "$(DATADIR)" != "/usr"
+	test -n "$(DOCDIR)" && test "$(DOCDIR)" != "/" && test "$(DOCDIR)" != "/usr"
+	rm -rf $(DATADIR)
+	rm -rf $(DOCDIR)
+	mkdir -p $(DOCDIR) $(DATADIR)/gfx $(DATADIR)/snd
 	cp data/gfx/* $(DATADIR)/gfx/
 	cp data/snd/* $(DATADIR)/snd/
 	cp data/*.svd $(DATADIR)/
@@ -76,6 +84,12 @@ clean:
 	rm -f *.o
 	rm -f $(NAME)
 	rm -f $(NAME)-*
+	-$(MAKE) -C tests clean
+
+check: test
+
+distclean: clean
+	rm -rf $(DEPDIR)
 
 #Making a binary package
 binary:
@@ -94,3 +108,6 @@ test-headless:
 
 test-quick:
 	./run_tests.sh --quick
+
+# Include automatic dependencies
+include $(wildcard $(DEPDIR)/*.d)

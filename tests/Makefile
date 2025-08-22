@@ -18,8 +18,12 @@ else
 CFLAGS += -O2
 endif
 
+# Automatic dependency generation
+DEPDIR := .deps
+DEPFLAGS = -MT $@ -MMD -MP -MF $(DEPDIR)/$*.d
+
 .SUFFIXES: .c .cc
-.PHONY: all clean test test-headless test-quick debug-interface gdb-debug
+.PHONY: all clean test test-headless test-quick debug-interface gdb-debug check distclean
 
 all: $(NAME)
 
@@ -28,7 +32,8 @@ $(NAME): test_runner.o test_framework.o test_sdl_scaffold.o test_game_logic.o te
 	$(CC) -o $(NAME) $^ $(LIBS)
 
 .cc.o:
-	$(CPPC) $(CFLAGS) -DPOSIX -DVERSION=\"${VERSION}\" -DDATADIR=\"${DATADIR}\" -c -o $@ $<
+	@mkdir -p $(DEPDIR)
+	$(CPPC) $(DEPFLAGS) $(CFLAGS) -DPOSIX -DVERSION=\"${VERSION}\" -DDATADIR=\"${DATADIR}\" -c -o $@ $<
 
 # Test targets
 test: $(NAME)
@@ -53,6 +58,14 @@ clean:
 	rm -f $(NAME)
 	rm -f debug-test
 
+check: test
+
+distclean: clean
+	rm -rf $(DEPDIR)
+
 # Ensure parent objects are built
 ../%.o: ../*.cc ../*.h
 	$(MAKE) -C .. $*.o
+
+# Include automatic dependencies
+include $(wildcard $(DEPDIR)/*.d)
