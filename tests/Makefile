@@ -72,6 +72,10 @@ gdb-interactive: debug-test
 # Clean
 clean:
 	rm -f *.o
+	rm -f *.gcno *.gcda
+	rm -f *~
+	rm -f *.log
+	rm -f *.dat
 	rm -f $(NAME)
 	rm -f debug-test
 

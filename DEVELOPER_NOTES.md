@@ -111,3 +111,50 @@ Use GDB with malloc checking for memory issue detection:
 ```bash
 make gdb-debug  # Enhanced debugging with MALLOC_CHECK_=2
 ```
+
+## Code Coverage Analysis
+
+### Coverage Reports
+StarVoyager supports comprehensive code coverage analysis using gcov and lcov:
+
+**HTML Coverage Report:**
+```bash
+make coverage
+# Generates coverage_report/index.html - interactive web-based report
+```
+
+**Text Coverage Report:**
+```bash
+make coverage-text
+# Generates coverage_report.txt - plain text summary
+```
+
+### Coverage Process
+1. **Clean Build**: Removes existing objects and coverage data
+2. **Instrumented Compilation**: Builds with `--coverage` flags and `-lgcov` linking
+3. **Test Execution**: Runs complete test suite via `run_tests.sh`
+4. **Data Collection**: Uses `lcov` to capture coverage information
+5. **Report Generation**: Creates HTML and/or text reports
+
+### Coverage Metrics
+- **Line Coverage**: Percentage of executable lines tested
+- **Function Coverage**: Percentage of functions called during tests
+- **File-by-File Breakdown**: Detailed coverage per source file
+
+### Interpreting Results
+**Well-tested modules** (>70% line coverage):
+- `database.cc` - File I/O and data persistence
+- `calc.h` - Mathematical utilities
+- `interface.cc` - User interface components
+
+**Needs attention** (<30% line coverage):
+- `server.cc` - Network server functionality
+- `ship.cc` - Core game logic
+- `sockhelper.cc` - Network utilities
+
+### Coverage Files
+- `coverage.info` - Raw lcov data file
+- `coverage_report/` - HTML report directory
+- `coverage_report.txt` - Text summary file
+- `*.gcda` - Runtime coverage data (auto-generated)
+- `*.gcno` - Compile-time coverage notes (auto-generated)

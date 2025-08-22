@@ -82,8 +82,16 @@ uninstall:
 #Clean
 clean:
 	rm -f *.o
+	rm -f *.gcno *.gcda
+	rm -f *~
+	rm -f *.log
 	rm -f $(NAME)
 	rm -f $(NAME)-*
+	rm -f *.tar.gz
+	rm -f coverage.info
+	rm -f coverage_report.txt
+	rm -rf coverage_report/
+	rm -rf autom4te.cache/
 	-$(MAKE) -C tests clean
 
 check: test
@@ -114,11 +122,21 @@ coverage:
 	$(MAKE) clean
 	$(MAKE) CFLAGS="$(CFLAGS) --coverage -O0 -g" LIBS="$(LIBS) -lgcov"
 	@echo "Running tests with coverage..."
+	$(MAKE) -C tests clean
+	$(MAKE) -C tests CFLAGS="$(CFLAGS) --coverage -O0 -g" LIBS="$(LIBS) -lgcov"
 	./run_tests.sh
 	lcov --capture --directory . --output-file coverage.info
 	lcov --remove coverage.info '/usr/*' --output-file coverage.info
 	genhtml coverage.info --output-directory coverage_report
 	@echo "Coverage report generated in coverage_report/index.html"
+
+# Text-based coverage report
+coverage-text: coverage
+	@echo "\n=== COVERAGE SUMMARY ==="
+	lcov --summary coverage.info
+	@echo "\n=== DETAILED COVERAGE BY FILE ==="
+	lcov --list coverage.info > coverage_report.txt
+	@echo "Text coverage report saved to coverage_report.txt"
 
 # Include automatic dependencies
 include $(wildcard $(DEPDIR)/*.d)
