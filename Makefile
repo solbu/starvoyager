@@ -22,7 +22,7 @@ endif
 #CFLAGS:=`sdl-config --cflags` -ggdb3 -Wall -Werror -ansi -pedantic
 PACKAGENAME=$(NAME)-$(VERSION)-`uname -m`-`uname|tr [A-Z] [a-z]`.bin
 .SUFFIXES: .c .cc
-.PHONY: all clean install install-data install-bin uninstall binary dist
+.PHONY: all clean install install-data install-bin uninstall binary dist test test-headless test-quick
 
 all: starvoyager
 
@@ -84,3 +84,13 @@ binary:
 
 dist:
 	git archive --prefix=$(NAME)-${VERSION}/ HEAD -o $(NAME)-${VERSION}.tar.gz
+
+#Testing
+test:
+	./run_tests.sh
+
+test-headless:
+	./run_tests.sh --headless
+
+test-quick:
+	./run_tests.sh --quick
