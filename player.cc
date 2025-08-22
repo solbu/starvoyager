@@ -17,7 +17,7 @@
 #include "server.h"
 #include "player.h"
 
-long lcount=0;
+long player_count=0;
 
 player::player()
 {
@@ -28,7 +28,7 @@ player::player()
 	op=false;
 	cash=0;
 	cashi=0;
-	lcount++;
+	player_count++;
 }
 
 player::player(char* nam)
@@ -53,7 +53,7 @@ player::player(char* nam)
 	mshp=NULL;
 	cash=0;
 	cashi=0;
-	lcount++;
+	player_count++;
 }
 
 player::~player()
@@ -65,7 +65,7 @@ player::~player()
 		delete mshp;
 	if(in)
 		delete in;
-	lcount--;
+	player_count--;
 }
 
 void player::init()
@@ -129,14 +129,14 @@ player* player::get(char* nam)
 void player::spawn(alliance* tali)
 {
 	planet* tpln; //Planet to spawn near
-	cord sloc; //Location to spawn at
+	cord spawn_location; //Location to spawn at
 
 	tpln=planet::pick(tali);
 	if(tpln)
 	{	
-		sloc=tpln->loc;
-		sloc.x+=calc::rnd(150)-calc::rnd(150);
-		sloc.y+=calc::rnd(150)-calc::rnd(150);
+		spawn_location=tpln->loc;
+		spawn_location.x+=calc::rnd(150)-calc::rnd(150);
+		spawn_location.y+=calc::rnd(150)-calc::rnd(150);
 		if(mshp)
 			delete mshp;
 		if(!(tali->spw))
@@ -145,7 +145,7 @@ void player::spawn(alliance* tali)
 		}
 		try
 		{
-			mshp=new ship(sloc,tali->spw,tali,ship::AI_NULL);
+			mshp=new ship(spawn_location,tali->spw,tali,ship::AI_NULL);
 		}
 		catch(error it)
 		{

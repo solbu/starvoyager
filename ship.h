@@ -51,10 +51,10 @@ class ship //Spaceship type in game
 	void turn(int dir); //Turns the ship by specified amount(in 1/100ths of an angle)
 	void accel(int dir,bool wrp); //Accelerates the ship positively or negatively (+1 or -1 in dir), wrp deciding if you are willing to make the impulse<=>warp transition
 	void shoot(bool torp); //Shoot at target with torpedoes if torp, otherwise phasers
-	bool see(ship* tshp); //Returns true if the given ship is visible to the current one, otherwise false
-	bool see(planet* tpln); //Returns true if the given planet is visible to the current ship, otherwise false
+	bool see(ship* target_ship); //Returns true if the given ship is visible to the current one, otherwise false
+	bool see(planet* target_planet); //Returns true if the given planet is visible to the current ship, otherwise false
 	bool see(frag* tfrg); //Returns true if the given frag is visible to the current ship, otherwise false
-	int interact(char* txt,short cmod,short opr,ship* mshp); //Handles a server request for information/action from this ship, with the given comm mode, operand and player's ship, writing the text into txt and returning the sprite index (-1 if n/a)
+	int interact(char* txt,short cmod,short opr,ship* player_ship); //Handles a server request for information/action from this ship, with the given comm mode, operand and player's ship, writing the text into txt and returning the sprite index (-1 if n/a)
 	int freemass(); //Returns free mass on board
 	void cloak(); //Cloak the ship
 	void uncloak(); //Uncloak the ship
@@ -91,9 +91,9 @@ class ship //Spaceship type in game
 	ship(int self); //Constructor that loads ship of given index out of the database into the universe
 
 	void physics(); //Handles physics of motion on this ship
-	void autonav(planet* tpln); //Autonavigate to given planet
-	void follow(ship* tshp); //Follow given ship
-	void attackpattern(ship* tshp,int str); //Run attack pattern on given ship, given a strobing value
+	void autonav(planet* target_planet); //Autonavigate to given planet
+	void follow(ship* target_ship); //Follow given ship
+	void attackpattern(ship* target_ship,int str); //Run attack pattern on given ship, given a strobing value
 	void loadlink(); //Extension to load that only resolves the links between ships
 	void maintain(); //Does routine work such as recharging shields and power, reloading weapons
 	void behave(); //Execute characteristic behaviour for this ship

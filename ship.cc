@@ -441,52 +441,52 @@ void ship::shoot(bool torp)
 	}
 }
 
-bool ship::see(ship* tshp)
+bool ship::see(ship* target_ship)
 {
 	double rng; //Effective range
 
-	if(!tshp) //Null ship
+	if(!target_ship) //Null ship
 		return false;
-	if(tshp==this) //Can always see self
+	if(target_ship==this) //Can always see self
 		return true;
 	if(sensor_array) //Set the sensor range, or default if no sensor suite
 		rng=sensor_array->item->rng;
 	else
 		rng=1000;
-	if(tshp->vel.rad<20) //Slower ships less visible
-		rng-=(((rng/2)*(20-tshp->vel.rad))/20);
-	if(tshp->cloaking_device && tshp->cloaking_device->cap==tshp->cloaking_device->item->cap) //Cloaked ships even less visible
+	if(target_ship->vel.rad<20) //Slower ships less visible
+		rng-=(((rng/2)*(20-target_ship->vel.rad))/20);
+	if(target_ship->cloaking_device && target_ship->cloaking_device->cap==target_ship->cloaking_device->item->cap) //Cloaked ships even less visible
 		rng/=8;
-	if((tshp->loc.x-loc.x)>rng) //Bounds checking
+	if((target_ship->loc.x-loc.x)>rng) //Bounds checking
 		return false;
-	if((tshp->loc.x-loc.x)<-rng)
+	if((target_ship->loc.x-loc.x)<-rng)
 		return false;
-	if((tshp->loc.y-loc.y)>rng)
+	if((target_ship->loc.y-loc.y)>rng)
 		return false;
-	if((tshp->loc.y-loc.y)<-rng)
+	if((target_ship->loc.y-loc.y)<-rng)
 		return false;
 	return true;
 }
 
-bool ship::see(planet* tpln)
+bool ship::see(planet* target_planet)
 {
 	double rng; //Effective range
 
-	if(!tpln) //Null planet
+	if(!target_planet) //Null planet
 		return false;
 	if(sensor_array) //Set the sensor range, or default if no sensor suite
 		rng=sensor_array->item->rng;
 	else
 		rng=1000;
-	if(tpln->typ==planet::STAR) //Can always see stars
+	if(target_planet->typ==planet::STAR) //Can always see stars
 		return true;
-	if((tpln->loc.x-loc.x)>rng) //Bounds checking
+	if((target_planet->loc.x-loc.x)>rng) //Bounds checking
 		return false;
-	if((tpln->loc.x-loc.x)<-rng)
+	if((target_planet->loc.x-loc.x)<-rng)
 		return false;
-	if((tpln->loc.y-loc.y)>rng)
+	if((target_planet->loc.y-loc.y)>rng)
 		return false;
-	if((tpln->loc.y-loc.y)<-rng)
+	if((target_planet->loc.y-loc.y)<-rng)
 		return false;
 	return true;		
 }
@@ -526,11 +526,11 @@ bool ship::see(frag* tfrg)
 	return true;		
 }
 
-int ship::interact(char* txt,short cmod,short opr,ship* mshp)
+int ship::interact(char* txt,short cmod,short opr,ship* player_ship)
 {
 	char spd[32]; //Speed
 
-	if(!(mshp && mshp->ply))
+	if(!(player_ship && player_ship->ply))
 		return -1;
 	switch(cmod)
 	{
@@ -538,10 +538,10 @@ int ship::interact(char* txt,short cmod,short opr,ship* mshp)
 		case CMOD_SCAN:
 		if(opr==-1)
 		{
-			if(mshp->see(this))
+			if(player_ship->see(this))
 			{
 				txt+=sprintf(txt,"%s\n",cls);
-				if(mshp->all->opposes(all))
+				if(player_ship->all->opposes(all))
 					txt+=sprintf(txt,"Alignment:%s [hostile]\n",all->nam);
 				else
 					txt+=sprintf(txt,"Alignment:%s\n",all->nam);
@@ -568,26 +568,26 @@ int ship::interact(char* txt,short cmod,short opr,ship* mshp)
 
 				txt+=sprintf(txt,"\nAvailable mass: %hd\n",freemass());
 
-				if(this==mshp)
+				if(this==player_ship)
 				{
 //					txt+=sprintf(txt,"\nAvailable mass: %hd\n",freemass());
 					txt+=sprintf(txt,"\nCredits: %ld\n",ply->cashi);
 				}
-				if(this==mshp->enem)
+				if(this==player_ship->enem)
 					txt+=sprintf(txt,"\n[1] Lay in an intercept course\n");
 				return spr;
 			}
 			else
 			{
 				txt+=sprintf(txt,"Target not visible\n");
-				if(this==mshp->enem)
+				if(this==player_ship->enem)
 					txt+=sprintf(txt,"\n[1] Lay in an intercept course\n");
 				return -1;
 			}
 		}
-		if(opr==1 && this==mshp->enem)
+		if(opr==1 && this==player_ship->enem)
 		{
-			mshp->aity=AI_AUTOPILOT;
+			player_ship->aity=AI_AUTOPILOT;
 		}
 		break;
 
@@ -702,20 +702,20 @@ int ship::interact(char* txt,short cmod,short opr,ship* mshp)
 			}
 			if(opr==1)
 			{
-				mshp->transport(this);
+				player_ship->transport(this);
 				enem=NULL;
 				plnt=NULL;
-				frnd=mshp;
+				frnd=player_ship;
 				for(int i=0;i<ISIZE;i++)
 					if(ships[i] && ships[i]->enem==this)
 						ships[i]->enem=NULL;
 				txt+=sprintf(txt,"Vessel successfully acquired");
-				mshp->ply->transfer(this);
+				player_ship->ply->transfer(this);
 			}
 		}
 		else
 		{
-			if(frnd==mshp)
+			if(frnd==player_ship)
 			{
 				if(opr==-1)
 				{
@@ -726,16 +726,16 @@ int ship::interact(char* txt,short cmod,short opr,ship* mshp)
 				{
 					try
 					{
-						mshp->transport(this);	
-						mshp->ply->transfer(this);
+						player_ship->transport(this);	
+						player_ship->ply->transfer(this);
 						txt+=sprintf(txt,"Transfer of command successful");
 					}
 					catch(error it)
 					{
 						try
 						{
-							transport(mshp);
-							mshp->ply->transfer(this);
+							transport(player_ship);
+							player_ship->ply->transfer(this);
 						}
 						catch(error iti)
 						{
@@ -1444,15 +1444,15 @@ void ship::physics()
 }
 
 
-void ship::autonav(planet* tpln)
+void ship::autonav(planet* target_planet)
 {
 	vect vtrg; //Vector to target
 	pol ptrg; //Polar to target
 	double dd; //Directional difference
 	double tol; //Angular tolerance
 
-	vtrg.xx=(self*497)%800-400+tpln->loc.x-loc.x;
-	vtrg.yy=(self*273)%800-400+tpln->loc.y-loc.y; //Vector to deterministic but arbitrary location near target planet
+	vtrg.xx=(self*497)%800-400+target_planet->loc.x-loc.x;
+	vtrg.yy=(self*273)%800-400+target_planet->loc.y-loc.y; //Vector to deterministic but arbitrary location near target planet
 
 	ptrg=vtrg.topol(); //...make polar
 
@@ -1499,19 +1499,19 @@ void ship::autonav(planet* tpln)
 		turn(-1);
 }
 
-void ship::follow(ship* tshp)
+void ship::follow(ship* target_ship)
 {
 	vect vtrg; //Vector to target
 	pol ptrg; //Polar to target
 	double dd; //Directional difference
 	double tol; //Angular tolerance
 
-	ptrg.ang=tshp->vel.ang+90+(self*29)%180; //Find deterministic formation angle to hold at around target ship
+	ptrg.ang=target_ship->vel.ang+90+(self*29)%180; //Find deterministic formation angle to hold at around target ship
 	ptrg.rad=100+(self*17)%((sensor_array ? sensor_array->item->rng : 1000)/16); //Deterministic range to hold based on sensor range
 	vtrg=ptrg.tovect();
 		
-	vtrg.xx+=tshp->loc.x-loc.x;
-	vtrg.yy+=tshp->loc.y-loc.y;
+	vtrg.xx+=target_ship->loc.x-loc.x;
+	vtrg.yy+=target_ship->loc.y-loc.y;
 	ptrg=vtrg.topol(); //Get polar vector to this formation position
 
 	dd=ptrg.ang-vel.ang;
@@ -1520,7 +1520,7 @@ void ship::follow(ship* tshp)
 	if(dd<-180)
 		dd=dd+360; //Evaluate angle between current heading and target bearing
 
-	if(!see(tshp))
+	if(!see(target_ship))
 		ptrg.rad-=(sensor_array ? sensor_array->item->rng : 1000)/3; //If you can't see the target, stand off a little
 
 	tol=turn_rate*2+2;
@@ -1561,27 +1561,27 @@ void ship::follow(ship* tshp)
 		turn(-1);
 }
 
-void ship::attackpattern(ship* tshp,int str)
+void ship::attackpattern(ship* target_ship,int str)
 {
 	vect vtrg; //Vector to target
 	pol ptrg; //Polar to target
 	double dd; //Directional difference
 	double tol; //Angular tolerance
 
-	if(!see(tshp) || vel.rad>=100) //If you can't see or are warp pursuing the target ship, default to the follow method
+	if(!see(target_ship) || vel.rad>=100) //If you can't see or are warp pursuing the target ship, default to the follow method
 	{
-		follow(tshp);
+		follow(target_ship);
 		return;
 	}
 	if(str>(200+calc::rnd((self%7)*12)-50)) //Alternate on tailing target from one of two sides
-		ptrg.ang=tshp->vel.ang+45+(str-self*29)%135;
+		ptrg.ang=target_ship->vel.ang+45+(str-self*29)%135;
 	else
-		ptrg.ang=tshp->vel.ang-45-(str+self*29)%135;
+		ptrg.ang=target_ship->vel.ang-45-(str+self*29)%135;
 	ptrg.rad=100+(self*17)%((str+(sensor_array ? sensor_array->item->rng : 1000))/16); //Back off a little depending on sensor range
 	vtrg=ptrg.tovect();
 		
-	vtrg.xx+=tshp->loc.x-loc.x;
-	vtrg.yy+=tshp->loc.y-loc.y;
+	vtrg.xx+=target_ship->loc.x-loc.x;
+	vtrg.yy+=target_ship->loc.y-loc.y;
 	ptrg=vtrg.topol(); //And finally get a polar to the 'formation' position
 
 	dd=ptrg.ang-vel.ang;
@@ -1590,7 +1590,7 @@ void ship::attackpattern(ship* tshp,int str)
 	if(dd<-180)
 		dd=dd+360; //Evaluate angle between current heading and target bearing
 
-	if(!see(tshp))
+	if(!see(target_ship))
 		ptrg.rad-=(sensor_array ? sensor_array->item->rng : 1000)/3; //If you can't see the target, stand off a little
 	tol=turn_rate*2+2;
 
@@ -1721,8 +1721,8 @@ void ship::behave()
 {
 	int istr; //Individual strobe for this ship
 	bool amrt; //Run amortised cost code for this state?
-	planet* tpln; //A planet for use in ai code
-	ship* tshp; //A ship for use in ai code
+	planet* target_planet; //A planet for use in ai code
+	ship* target_ship; //A ship for use in ai code
 
 	istr=(mstr+self*7)%400;
 	if(istr%40==0)
@@ -1764,9 +1764,9 @@ void ship::behave()
 			}
 			if(!plnt || plnt->all!=all || vel.rad<=5)
 			{
-				tpln=planet::pick(all);
-				if(tpln && tpln->typ!=planet::STAR && see(tpln))
-					plnt=tpln;
+				target_planet=planet::pick(all);
+				if(target_planet && target_planet->typ!=planet::STAR && see(target_planet))
+					plnt=target_planet;
 			}
 		}
 		break;
@@ -1789,10 +1789,10 @@ void ship::behave()
 			if(!enem)
 			{
 				shieldsdown();
-				tshp=pickhostile();
-				if(tshp)
+				target_ship=pickhostile();
+				if(target_ship)
 				{
-					enem=tshp;
+					enem=target_ship;
 					plnt=NULL;
 				}
 			}
@@ -1826,9 +1826,9 @@ void ship::behave()
 				shieldsup();
 			if(!plnt || all->opposes(plnt->all) || vel.rad<=5)
 			{
-				tpln=planet::pickally(all);
-				if(tpln && tpln->typ!=planet::STAR)
-					plnt=tpln;
+				target_planet=planet::pickally(all);
+				if(target_planet && target_planet->typ!=planet::STAR)
+					plnt=target_planet;
 			}
 		}
 		break;
