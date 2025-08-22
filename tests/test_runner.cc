@@ -14,6 +14,9 @@ void run_gui_tests();
 void run_integration_tests();
 void run_gameplay_tests();
 void run_interface_setup_test();
+void run_equipment_refactoring_tests();
+void run_ship_properties_tests();
+void run_function_renames_tests();
 
 int main(int argc, char* argv[]) {
 	bool headless = false;
@@ -43,6 +46,9 @@ int main(int argc, char* argv[]) {
 	// Run test suites
 	run_game_logic_tests();
 	run_gameplay_tests();
+	run_equipment_refactoring_tests();
+	run_ship_properties_tests();
+	run_function_renames_tests();
 	
 	if (!headless) {
 		run_gui_tests();
