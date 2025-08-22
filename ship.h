@@ -121,11 +121,11 @@ class ship //Spaceship type in game
 	int hul; //Hull integrity
 	int mhul; //Maximum hull integrity
 	
-	slot* pow; //Power plant
-	slot* shd; //Shield generator
-	slot* sens; //Sensor platform
-	slot* clk; //Cloaking device
-	slot* ful; //Fuel tank
+	slot* power_plant; //Power plant
+	slot* shield_generator; //Shield generator
+	slot* sensor_array; //Sensor platform
+	slot* cloaking_device; //Cloaking device
+	slot* fuel_tank; //Fuel tank
 	
 	int esel; //Equipment selection
 	slot slots[32]; //Equipment
