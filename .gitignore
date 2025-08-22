@@ -12,3 +12,4 @@ tests/debug-test
 *.tar.gz
 .deps/
 tests/.deps/
+tests/*.dat

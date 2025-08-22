@@ -110,9 +110,9 @@ test-quick:
 	./run_tests.sh --quick
 
 # Code coverage target
-coverage: CFLAGS += --coverage -O0 -g
-coverage: LIBS += --coverage
-coverage: clean all
+coverage:
+	$(MAKE) clean
+	$(MAKE) CFLAGS="$(CFLAGS) --coverage -O0 -g" LIBS="$(LIBS) -lgcov"
 	@echo "Running tests with coverage..."
 	./run_tests.sh
 	lcov --capture --directory . --output-file coverage.info
