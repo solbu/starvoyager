@@ -61,7 +61,7 @@ void test_ship_index_operations() {
 		
 		// Test get() function with valid indices
 		for (int i = 0; i < 10; i++) {
-			ship* s = ship::get(i);
+			(void)ship::get(i);
 			// Should not crash, may return null
 		}
 		
@@ -90,7 +90,7 @@ void test_planet_selection() {
 		// Test pick() function with valid alliance
 		alliance* test_alliance = alliance::get(0);
 		if (test_alliance) {
-			planet* p2 = planet::pick(test_alliance);
+			(void)planet::pick(test_alliance);
 			// Should not crash, may return null
 		}
 		
@@ -111,10 +111,10 @@ void test_variable_name_consistency() {
 		ship* test_ship = ship::libget(0);
 		if (test_ship) {
 			// These should compile and not crash
-			alliance* ship_alliance = test_ship->all;
-			ship* enemy = test_ship->enem;
-			ship* friend_ship = test_ship->frnd;
-			planet* target_planet = test_ship->plnt;
+			(void)test_ship->all;
+			(void)test_ship->enem;
+			(void)test_ship->frnd;
+			(void)test_ship->plnt;
 		}
 		
 		TEST_ASSERT(true, "variable name patterns accessible");
@@ -134,7 +134,7 @@ void test_ship_planet_interactions() {
 			// Test planet visibility
 			planet* test_planet = planet::get(0);
 			if (test_planet) {
-				bool visible = test_ship->see(test_planet);
+				(void)test_ship->see(test_planet);
 				// Should not crash
 			}
 		}
@@ -155,7 +155,7 @@ void test_alliance_ship_relationships() {
 		
 		if (alliance1 && alliance2) {
 			// Test alliance opposition
-			bool opposes = alliance1->opposes(alliance2);
+			(void)alliance1->opposes(alliance2);
 			// Should not crash
 		}
 		

@@ -131,6 +131,9 @@ frag* frag::get(int indx)
 
 void frag::serialize_to_network(int typ,unsigned char* buf)
 {
+	if(!buf)
+		return;
+	
 	buf[0]=typ;
 	buf+=1;
 

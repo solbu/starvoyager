@@ -25,6 +25,7 @@ private:
 	static int total_tests;
 	static int passed_tests;
 	static int failed_tests;
+	static int skipped_tests;
 	static char last_failure[256];
 };
 

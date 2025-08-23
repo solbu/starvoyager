@@ -28,7 +28,7 @@ DEPFLAGS = -MT $@ -MMD -MP -MF $(DEPDIR)/$*.d
 all: $(NAME)
 
 # Test runner linking
-$(NAME): test_runner.o test_framework.o test_sdl_scaffold.o test_game_logic.o test_gui.o test_integration.o test_gameplay.o test_interface_setup.o test_equipment_refactoring.o test_ship_properties.o test_function_renames.o test_batch1_core_structures.o test_batch2_equipment_alliance.o test_batch3_network.o test_batch4_graphics.o test_batch5_physics.o test_batch6_ai_logic.o test_batch7_database.o test_batch8_sound_error.o test_performance_benchmarks.o test_memory_management.o test_error_paths.o ../alliance.o ../calc.o ../camera.o ../database.o ../error.o ../equip.o ../graphic.o ../interface.o ../os.o ../server.o ../client.o ../ship.o ../sound.o ../ticker.o ../planet.o ../player.o ../presence.o ../frag.o ../sockhelper.o ../SDL_rotozoom.o ../SDL_gfxPrimitives.o ../SDL_gfxBlitFunc.o
+$(NAME): test_runner.o test_framework.o test_sdl_scaffold.o test_ship_factory.o test_stubs.o test_game_logic.o test_gui.o test_integration.o test_gameplay.o test_interface_setup.o test_equipment_refactoring.o test_ship_properties.o test_function_renames.o test_batch1_core_structures.o test_batch2_equipment_alliance.o test_batch3_network.o test_batch4_graphics.o test_batch5_physics.o test_batch6_ai_logic.o test_batch7_database.o test_batch8_sound_error.o test_performance_benchmarks.o test_memory_management.o test_error_paths.o ../alliance.o ../calc.o ../camera.o ../database.o ../error.o ../equip.o ../graphic.o ../interface.o ../os.o ../server.o ../client.o ../ship.o ../sound.o ../ticker.o ../planet.o ../player.o ../presence.o ../frag.o ../sockhelper.o ../SDL_rotozoom.o ../SDL_gfxPrimitives.o ../SDL_gfxBlitFunc.o
 	$(CC) -o $(NAME) $^ $(LIBS)
 
 .cc.o:
@@ -58,7 +58,7 @@ test-regression: $(NAME)
 
 # Debug test with all current test modules
 debug-test: CFLAGS += -O0 -ggdb3
-debug-test: test_runner.o test_framework.o test_sdl_scaffold.o test_game_logic.o test_gui.o test_integration.o test_gameplay.o test_interface_setup.o test_equipment_refactoring.o test_ship_properties.o test_function_renames.o test_batch1_core_structures.o test_batch2_equipment_alliance.o test_batch3_network.o test_batch4_graphics.o test_batch5_physics.o test_batch6_ai_logic.o test_batch7_database.o test_batch8_sound_error.o test_performance_benchmarks.o test_memory_management.o test_error_paths.o ../alliance.o ../calc.o ../camera.o ../database.o ../error.o ../equip.o ../graphic.o ../interface.o ../os.o ../server.o ../client.o ../ship.o ../sound.o ../ticker.o ../planet.o ../player.o ../presence.o ../frag.o ../sockhelper.o ../SDL_rotozoom.o ../SDL_gfxPrimitives.o ../SDL_gfxBlitFunc.o
+debug-test: test_runner.o test_framework.o test_sdl_scaffold.o test_ship_factory.o test_stubs.o test_game_logic.o test_gui.o test_integration.o test_gameplay.o test_interface_setup.o test_equipment_refactoring.o test_ship_properties.o test_function_renames.o test_batch1_core_structures.o test_batch2_equipment_alliance.o test_batch3_network.o test_batch4_graphics.o test_batch5_physics.o test_batch6_ai_logic.o test_batch7_database.o test_batch8_sound_error.o test_performance_benchmarks.o test_memory_management.o test_error_paths.o ../alliance.o ../calc.o ../camera.o ../database.o ../error.o ../equip.o ../graphic.o ../interface.o ../os.o ../server.o ../client.o ../ship.o ../sound.o ../ticker.o ../planet.o ../player.o ../presence.o ../frag.o ../sockhelper.o ../SDL_rotozoom.o ../SDL_gfxPrimitives.o ../SDL_gfxBlitFunc.o
 	$(CC) -o debug-test $^ $(LIBS)
 
 # GDB debug with malloc checking and backtrace on crash

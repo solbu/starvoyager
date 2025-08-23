@@ -28,6 +28,8 @@ ship::ship(cord loc,ship* lshp,alliance* tali,int aity)
  	if(!lshp)
 		throw error("Null ship template given");
 	*this=*lshp;
+	if(strlen(cls) == 0)
+		throw error("Invalid ship template - missing class name");
 	vel.ang=calc::rnd(360);
 	vel.rad=0;
 	this->loc=loc;
