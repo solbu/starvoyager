@@ -6,6 +6,8 @@
 */
 
 #include "test_framework.h"
+#include "test_stubs.h"
+#include "test_ship_factory.h"
 #include "../calc.h"
 #include "../ship.h"
 #include "../planet.h"
@@ -16,25 +18,19 @@
 
 void test_ship_creation_destruction() {
 	try {
-		ship::init();
-		alliance::init();
+		TestShipFactory::init_test_environment();
 		
 		// Test ship lifecycle
-		alliance* test_alliance = alliance::get(0);
-		ship* template_ship = ship::libget(0);
+		ship* test_ship = TestShipFactory::create_functional_test_ship();
 		
-		if (test_alliance && template_ship) {
-			cord spawn_location = {0, 0};
-			
-			// Create ship
-			ship* test_ship = new ship(spawn_location, template_ship, test_alliance, ship::AI_NULL);
+		if (test_ship) {
 			TEST_ASSERT(test_ship != NULL, "ship creation succeeds");
 			
 			// Insert into game
 			test_ship->insert();
 			
 			// Destroy ship
-			delete test_ship;
+			TestShipFactory::cleanup_test_ship(test_ship);
 			TEST_ASSERT(true, "ship destruction succeeds");
 		} else {
 			TEST_ASSERT(true, "ship lifecycle test skipped (missing dependencies)");
@@ -47,10 +43,10 @@ void test_ship_creation_destruction() {
 
 void test_planet_lifecycle_management() {
 	try {
-		planet::init();
-		alliance::init();
+		TestShipFactory::init_test_environment();
+		TestStubs::mock_alliance_lifecycle();
 		
-		alliance* test_alliance = alliance::get(0);
+		alliance* test_alliance = TestShipFactory::create_test_alliance();
 		if (test_alliance) {
 			cord planet_location = {1000, 2000};
 			

@@ -5,6 +5,7 @@
 */
 
 #include "test_framework.h"
+#include "test_ship_factory.h"
 #include "../calc.h"
 #include "../ship.h"
 #include "../alliance.h"
@@ -14,16 +15,14 @@
 void test_mass_calculations() {
 	try {
 		// Initialize systems
-		calc::init();
-		ship::init();
-		alliance::init();
-		equip::init();
+		TestShipFactory::init_test_environment();
 		
 		// Test mass-related functionality through freemass()
-		ship* test_ship = ship::libget(0);
+		ship* test_ship = TestShipFactory::create_functional_test_ship();
 		if (test_ship) {
 			int free_mass = test_ship->get_available_cargo_space();
 			TEST_ASSERT(free_mass >= 0, "free mass calculation returns valid value");
+			TestShipFactory::cleanup_test_ship(test_ship);
 		} else {
 			TEST_ASSERT(true, "mass calculation test skipped (no test ship)");
 		}
@@ -34,7 +33,8 @@ void test_mass_calculations() {
 
 void test_hull_integrity_system() {
 	try {
-		ship* test_ship = ship::libget(0);
+		TestShipFactory::init_test_environment();
+		ship* test_ship = TestShipFactory::create_functional_test_ship();
 		if (test_ship) {
 			// Test hull-related functionality indirectly
 			cord test_location = {0, 0};
@@ -43,6 +43,7 @@ void test_hull_integrity_system() {
 			// Test collision detection (uses hull dimensions)
 			bool collision = test_ship->detect_collision(test_location, test_velocity);
 			TEST_ASSERT(collision == false, "collision detection works");
+			TestShipFactory::cleanup_test_ship(test_ship);
 		} else {
 			TEST_ASSERT(true, "hull integrity test skipped (no test ship)");
 		}
@@ -53,12 +54,14 @@ void test_hull_integrity_system() {
 
 void test_impulse_acceleration() {
 	try {
-		ship* test_ship = ship::libget(0);
+		TestShipFactory::init_test_environment();
+		ship* test_ship = TestShipFactory::create_functional_test_ship();
 		if (test_ship) {
 			// Test acceleration functionality
 			test_ship->accel(1, false);  // Impulse acceleration
 			test_ship->accel(-1, false); // Deceleration
 			TEST_ASSERT(true, "impulse acceleration works");
+			TestShipFactory::cleanup_test_ship(test_ship);
 		} else {
 			TEST_ASSERT(true, "impulse acceleration test skipped (no test ship)");
 		}
@@ -69,12 +72,14 @@ void test_impulse_acceleration() {
 
 void test_warp_speed_mechanics() {
 	try {
-		ship* test_ship = ship::libget(0);
+		TestShipFactory::init_test_environment();
+		ship* test_ship = TestShipFactory::create_functional_test_ship();
 		if (test_ship) {
 			// Test warp functionality
 			test_ship->accel(1, true);   // Allow warp transition
 			test_ship->accel(-1, true);  // Warp deceleration
 			TEST_ASSERT(true, "warp speed mechanics work");
+			TestShipFactory::cleanup_test_ship(test_ship);
 		} else {
 			TEST_ASSERT(true, "warp speed test skipped (no test ship)");
 		}
@@ -96,12 +101,14 @@ void test_mass_lock_behavior() {
 
 void test_ship_turning_mechanics() {
 	try {
-		ship* test_ship = ship::libget(0);
+		TestShipFactory::init_test_environment();
+		ship* test_ship = TestShipFactory::create_functional_test_ship();
 		if (test_ship) {
 			// Test turning functionality
 			test_ship->turn(1);   // Turn right
 			test_ship->turn(-1);  // Turn left
 			TEST_ASSERT(true, "ship turning mechanics work");
+			TestShipFactory::cleanup_test_ship(test_ship);
 		} else {
 			TEST_ASSERT(true, "turning mechanics test skipped (no test ship)");
 		}

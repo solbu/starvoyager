@@ -349,8 +349,9 @@ void graphic::load()
 	SDL_Surface* tmp; //Temporary holding place while sprites are converted
 	char* path; //Path to load sprite from
 
-	path=new char[strlen(DATADIR)+32];
-	sprintf(path,"%s/gfx/%i.bmp",DATADIR,self);
+	int path_len = strlen(DATADIR)+32;
+	path=new char[path_len];
+	snprintf(path,path_len,"%s/gfx/%i.bmp",DATADIR,self);
 	orig=SDL_LoadBMP(path);
 	delete[] path;
 	if(!orig)

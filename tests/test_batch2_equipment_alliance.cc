@@ -10,6 +10,7 @@
 #include "../equip.h"
 #include "../alliance.h"
 #include "../ship.h"
+#include "test_ship_factory.h"
 
 void test_equipment_type_constants() {
 	try {
@@ -103,7 +104,7 @@ void test_readiness_timer_mechanics() {
 		equip* test_equip = equip::get(0);
 		if (test_equip) {
 			// Test readiness property access
-			int readiness = test_equip->rdy;
+			(void)test_equip->rdy;
 			// Readiness can be negative, zero, or positive
 		}
 		
@@ -121,7 +122,7 @@ void test_alliance_equipment_generation() {
 		alliance* test_alliance = alliance::get(0);
 		if (test_alliance) {
 			// Test equipment generation
-			equip* generated_equip = test_alliance->getequip();
+			(void)test_alliance->getequip();
 			// Should not crash, may return null
 		}
 		
@@ -133,13 +134,12 @@ void test_alliance_equipment_generation() {
 
 void test_alliance_spawn_templates() {
 	try {
-		alliance::init();
-		ship::init();
+		TestShipFactory::init_test_environment();
 		
-		alliance* test_alliance = alliance::get(0);
+		alliance* test_alliance = TestShipFactory::create_test_alliance();
 		if (test_alliance) {
 			// Test spawn template generation
-			ship* spawn_template = test_alliance->getspawn();
+			(void)test_alliance->getspawn();
 			// Should not crash, may return null
 		}
 		

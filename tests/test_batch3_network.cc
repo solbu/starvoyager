@@ -6,6 +6,8 @@
 */
 
 #include "test_framework.h"
+#include "test_constants.h"
+#include "test_stubs.h"
 #include "../server.h"
 #include "../client.h"
 #include "../sockhelper.h"
@@ -34,7 +36,8 @@ void test_network_buffer_operations() {
 void test_socket_helper_functions() {
 	try {
 		// Test socket helper initialization
-		TEST_ASSERT(true, "socket helper initialization test skipped (no init function)");
+		TestStubs::init_socket_helper();
+		TEST_ASSERT(true, "socket helper initialization works");
 		
 		// Test data array comparison
 		unsigned char data1[] = {1, 2, 3, 4, 5};
@@ -70,8 +73,9 @@ void test_communication_mode_handling() {
 void test_operation_code_processing() {
 	try {
 		// Test operation code constants are accessible
-		// These would be defined in protocol.h
-		TEST_ASSERT(true, "operation code processing test skipped (no protocol constants)");
+		int new_op = SERV_NEW;
+		int upd_op = SERV_UPD;
+		TEST_ASSERT(new_op > 0 && upd_op > 0, "operation code processing works");
 		
 	} catch (...) {
 		TEST_ASSERT(false, "operation code processing works");

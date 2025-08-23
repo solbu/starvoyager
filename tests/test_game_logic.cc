@@ -40,7 +40,7 @@ void test_ship_initialization() {
 void test_ship_index_bounds() {
 	// Test ship index bounds
 	for(int i = 0; i < 10; i++) {
-		ship* s = ship::get(i);
+		(void)ship::get(i);
 		// Should not crash, may return null
 		TEST_ASSERT(true, "ship::get doesn't crash");
 	}
@@ -50,7 +50,7 @@ void test_ship_library() {
 	try {
 		// Test library access
 		for(int i = 0; i < 5; i++) {
-			ship* lib_ship = ship::libget(i);
+			(void)ship::libget(i);
 			// Should not crash
 		}
 		TEST_ASSERT(true, "ship library access works");
@@ -98,7 +98,8 @@ void test_player_system() {
 		TEST_ASSERT(true, "player::init doesn't crash");
 		
 		// Test player lookup of non-existent player
-		player* p = player::get("nonexistent");
+		char name[] = "nonexistent";
+		player* p = player::get(name);
 		TEST_ASSERT(p == NULL, "non-existent player returns null");
 	} catch (...) {
 		TEST_ASSERT(false, "player system tests");

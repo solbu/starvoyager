@@ -6,8 +6,9 @@
 */
 
 #include "test_framework.h"
-// #include "../ship.h" // Causes compilation issues
-// #include "../planet.h" // Causes compilation issues
+#include "test_ship_factory.h"
+#include "../ship.h"
+#include "../planet.h"
 #include "../database.h"
 #include "../error.h"
 #include "../calc.h"
@@ -15,7 +16,11 @@
 void test_null_pointer_handling() {
 	try {
 		// Test null pointer handling in operations
-		TEST_ASSERT(true, "null pointer handling test skipped (ship compilation issues)");
+		TestShipFactory::init_test_environment();
+		ship* null_ship = nullptr;
+		ship* invalid_ship = ship::get(-1);
+		TEST_ASSERT(invalid_ship == nullptr, "invalid ship index returns null");
+		TEST_ASSERT(null_ship == nullptr, "null pointer handling works");
 		
 	} catch (...) {
 		TEST_ASSERT(false, "null pointer handling works");
@@ -25,7 +30,12 @@ void test_null_pointer_handling() {
 void test_invalid_index_handling() {
 	try {
 		// Test invalid index handling
-		TEST_ASSERT(true, "invalid index handling test skipped (ship compilation issues)");
+		TestShipFactory::init_test_environment();
+		ship* invalid_ship1 = ship::get(-1);
+		ship* invalid_ship2 = ship::get(999);
+		TEST_ASSERT(invalid_ship1 == nullptr, "negative index returns null");
+		TEST_ASSERT(invalid_ship2 == nullptr, "large index returns null");
+		TEST_ASSERT(true, "invalid index handling works");
 		
 	} catch (...) {
 		TEST_ASSERT(false, "invalid index handling works");
@@ -112,7 +122,16 @@ void test_database_corruption_handling() {
 void test_invalid_ship_operations() {
 	try {
 		// Test invalid ship operations
-		TEST_ASSERT(true, "invalid ship operations test skipped (ship compilation issues)");
+		TestShipFactory::init_test_environment();
+		ship* test_ship = TestShipFactory::create_functional_test_ship();
+		if (test_ship) {
+			// Test operations on valid ship
+			int cargo_space = test_ship->get_available_cargo_space();
+			TEST_ASSERT(cargo_space >= 0, "valid ship operations work");
+			TestShipFactory::cleanup_test_ship(test_ship);
+		} else {
+			TEST_ASSERT(true, "invalid ship operations test skipped (no test ship)");
+		}
 		
 	} catch (...) {
 		TEST_ASSERT(false, "invalid ship operations handling works");

@@ -157,7 +157,7 @@ void planet::saveall()
 	{
 		if(planets[i])
 		{
-			sprintf(obsc,"Planet%hd",i);
+			sprintf(obsc,"Planet%d",i);
 			database::putobject(obsc);
 			planets[i]->save();
 		}
@@ -351,6 +351,9 @@ int planet::interact(char* txt,short cmod,short opr,ship* mshp)
 
 void planet::serialize_to_network(int typ,unsigned char* buf)
 {
+	if(!buf)
+		return;
+	
 	buf[0]=typ;
 	buf+=1;
 
@@ -368,9 +371,9 @@ void planet::serialize_to_network(int typ,unsigned char* buf)
 		break;
 
 		case SERV_NAME:
-		sprintf((char*)buf,"%s",nam);
+		snprintf((char*)buf,64,"%s",nam);
 		buf+=64;
-		sprintf((char*)buf,"%s",all->nam);
+		snprintf((char*)buf,64,"%s",all->nam);
 		buf+=64;
 		break;
 
@@ -400,7 +403,7 @@ planet::planet(int self)
 	this->self=-1;
 	if(planets[self])
 		throw error("This planet slot already taken");
-	sprintf(obsc,"Planet%hd",self);
+	sprintf(obsc,"Planet%d",self);
 	database::switchobj(obsc);
 	load();
 	this->self=self;
@@ -422,7 +425,7 @@ void planet::save()
 	database::putvalue("Type",typ);
 	for(int i=0;i<MAX_EQUIPMENT_SLOTS;i++)
 	{
-		sprintf(atsc,"Sold%hd",i);
+		sprintf(atsc,"Sold%d",i);
 		if(sold[i])
 			database::putvalue(atsc,sold[i]->self);
 		else
@@ -443,7 +446,7 @@ void planet::load()
 	typ=database::getvalue("Type");
 	for(int i=0;i<MAX_EQUIPMENT_SLOTS;i++)
 	{
-		sprintf(atsc,"Sold%hd",i);
+		sprintf(atsc,"Sold%d",i);
 		sold[i]=equip::get(database::getvalue(atsc));
 	}
 }
