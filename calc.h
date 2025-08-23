@@ -14,6 +14,9 @@
 	Angles increase clockwise. See COORDINATE_SYSTEM.md for details.
 */
 
+#ifndef CALC_H
+#define CALC_H
+
 #include <math.h>
 #include <SDL_types.h>
 #include <SDL_endian.h>
@@ -247,3 +250,5 @@ class calc //Mathematics module
         static long warp_speed_table[10]; //Warp speed table
         static char speed_string_buffer[33]; //Speed string (saves having to malloc, but it ain't threadsafe!)
 };
+
+#endif // CALC_H

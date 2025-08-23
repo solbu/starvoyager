@@ -6,9 +6,7 @@
 	If that file is not included with this source then permission is not given to use this source in any way whatsoever.
 */
 
-struct pol;
-struct vect;
-struct cord;
+#include "calc.h"
 class alliance;
 class planet;
 class equip;
