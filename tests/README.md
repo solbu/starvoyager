@@ -17,6 +17,12 @@ cd tests
 make
 ```
 
+**Note**: For debug test options, ensure `gdb` is installed:
+```bash
+# Debian/Ubuntu
+sudo apt install gdb
+```
+
 ## Running Tests
 
 ### Full Test Suite

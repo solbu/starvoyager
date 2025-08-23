@@ -10,6 +10,8 @@
 
 * Evaluate upgrading to SDL2 - might not be feasible
 * Win32 and MacOS builds from above AutoTools
+* Test `clang` compilations
+* SQLiteC++ (SQLiteCpp) for persistent storage (SVD)
 * Update version and changelog
 
 ## Long Term

@@ -43,6 +43,12 @@ I used [Johnny A. Solbu Github](https://github.com/solbu/starvoyager) with all t
 ```bash
 # Debian/Ubuntu
 sudo apt install libsdl2-dev libsdl-net1.2-dev libsdl1.2-compat-dev
+
+# For code coverage analysis
+sudo apt install lcov
+
+# For debugging
+sudo apt install gdb
 ```
 
 ### Build from Source
@@ -204,6 +210,25 @@ The project includes a complete VS Code debugging configuration in the `.vscode/
 - Pretty-printing for variables
 - IntelliSense code completion
 - Multiple debug configurations
+
+### Code Coverage Analysis
+
+Generate code coverage reports to validate test effectiveness:
+
+```bash
+# Generate coverage report
+make coverage
+
+# View report
+open coverage_report/index.html
+```
+
+#### VS Code Integration
+
+1. Press `Ctrl+Shift+P` (or `Cmd+Shift+P` on macOS)
+2. Type "Tasks: Run Task"
+3. Select "Generate Coverage Report"
+4. View results in `coverage_report/index.html`
 
 ### Version History
 
