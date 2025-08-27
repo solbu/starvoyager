@@ -6,7 +6,7 @@
 	If that file is not included with this source then permission is not given to use this source in any way whatsoever.
 */
 
-#include <string.h>
+#include <cstring>
 #include "calc.h"
 #include "sockhelper.h"
 #include "protocol.h"
@@ -29,17 +29,25 @@ void client::stop()
 {
 	if(sock)
 	{
-		SDLNet_TCP_Close(sock);
+		try {
+			SDLNet_TCP_Close(sock);
+		} catch(...) {
+			// Ignore socket close errors during cleanup
+		}
 		sock=NULL;
 	}
 	if(hlpr)
 	{
-		delete hlpr;
+		try {
+			delete hlpr;
+		} catch(...) {
+			// Ignore helper deletion errors during cleanup
+		}
 		hlpr=NULL;
 	}
 }
 
-void client::connect(char* host)
+void client::connect(const char* host)
 {
 	IPaddress serv; //Server address
 
@@ -49,7 +57,13 @@ void client::connect(char* host)
 	sock=SDLNet_TCP_Open(&serv);
 	if(!sock)
 		throw error("Could not connect to server");
-	hlpr=new sockhelper(sock);
+	try {
+		hlpr=new sockhelper(sock);
+	} catch(...) {
+		SDLNet_TCP_Close(sock);
+		sock=NULL;
+		throw error("Failed to create socket helper");
+	}
 	hlpr->send((unsigned char*)SIGN,strlen(SIGN));
 	btck=0;
 }
@@ -246,6 +260,8 @@ void client::poll()
 					interface::printtomesg("%s",txt);
 					hlpr->suck();
 				}
+				else
+					exl=true;
 			}
 			else
 				exl=true;
@@ -303,7 +319,7 @@ void client::readln()
 	if(interface::getline(txt,hide))
 	{
 		edit=false;
-		for(int i=0;i<65;i++)
+		for(int i=0;i<64;i++)
 		{
 			action(CLIENT_CHAR,txt[i]);
 			if(txt[i]=='\0')

@@ -57,6 +57,7 @@ void server::start(bool locg)
 	lstn=SDLNet_TCP_Open(&serv);
 	if(!lstn)
 		throw error("Can't open listening socket");
+	// fprintf(logf,"%s: Server started listening on port %d\n",os::gettime(),(int)PORT);
 	fprintf(logf,"%s: Server started listening on port %hd\n",os::gettime(),PORT);
 	fflush(logf);
 	server::locg=locg;
@@ -115,6 +116,7 @@ void server::cycle()
 			{
 				connections[i]->log("Dropped from the game: %s",it.str);
 				delete connections[i];
+				connections[i] = NULL;
 			}
 		}
 	}
@@ -137,7 +139,7 @@ void server::notifykill(player* ply)
 }
 
 
-void server::hail(player* fr,player* to,char* msg)
+void server::hail(player* fr,player* to,const char* msg)
 {
 	char txt[256]; //Communications text
 	char* frnm; //Name of from
@@ -149,15 +151,16 @@ void server::hail(player* fr,player* to,char* msg)
 	if(fr)
 	{
 		frnm=fr->nam;
-		if(!frnm)
+		if(!frnm) {
 			if(fr->in)
 				frnm=fr->in->cls;
 			else
-				frnm="";
-		sprintf(txt,"%s: %s",frnm,msg);
+				frnm=const_cast<char*>("");
+		}
+		snprintf(txt,sizeof(txt),"%s: %s",frnm,msg);
 	}
 	else
-		sprintf(txt,"%s",msg);
+		snprintf(txt,sizeof(txt),"%s",msg);
 
 	for(int i=0;i<ISIZE;i++)
 	{	
@@ -170,13 +173,23 @@ void server::hail(player* fr,player* to,char* msg)
 			{
 				if(connections[i]->ply->in)
 					server::registersound(connections[i]->ply->in,SND_COMM);
-				connections[i]->log("Received hail \"%s\"",txt);
+				{
+					char sanitized[256];
+					int k=0;
+					for(int j=0; j<255 && txt[j]!='\0'; j++)
+					{
+						if(txt[j]>=32 && txt[j]<=126 && txt[j]!='\n' && txt[j]!='\r')
+							sanitized[k++] = txt[j];
+					}
+					sanitized[k] = '\0';
+					connections[i]->log("Received hail \"%s\"",sanitized);
+				}
 			}
 		}
 	}
 }
 
-void server::bulletin(char* fmt,...)
+void server::bulletin(const char* fmt,...)
 {
 	char buf[132]; //Outgoing buffer
 	va_list fmts;
@@ -184,14 +197,28 @@ void server::bulletin(char* fmt,...)
 	if(fmt[0]!='\0')
 	{
 		va_start(fmts,fmt);
-		vsprintf(buf,fmt,fmts);
+		int len = vsnprintf(buf,sizeof(buf),fmt,fmts);
 		va_end(fmts);
+		if(len < 0 || len >= (int)sizeof(buf)) {
+			throw error("Bulletin message too long");
+		}
 
 		for(int i=0;i<ISIZE;i++)
 			if(connections[i])
 				connections[i]->printtomesg("%s",buf);
 		
-		fprintf(logf,"%s: Bulletin - %s\n",os::gettime(),buf);
+		{
+			char sanitized_bulletin[132];
+			int k=0;
+			for(int j=0; j<131 && buf[j]!='\0'; j++)
+			{
+				// if(buf[j]>=32 && buf[j]<=126 && buf[j]!='\n' && buf[j]!='\r')
+				if((buf[j]>=32 && buf[j]<=126) || buf[j]==' ')
+					sanitized_bulletin[k++] = buf[j];
+			}
+			sanitized_bulletin[k] = '\0';
+			fprintf(logf,"%s: Bulletin - %s\n",os::gettime(),sanitized_bulletin);
+		}
 		fflush(logf);
 	}
 }
@@ -200,15 +227,17 @@ void server::registernoise(ship* fr,int snd)
 {
 	unsigned char buf[SERV_NOISE_SZ]; //Buffer for sending sound
 
+	buf[0]=SERV_NOISE;
+	calc::inttodat(snd,buf+1);
+	calc::inttodat(ship2pres(fr->self),buf+3);
+
 	for(int i=0;i<ISIZE;i++)
 	{
 		if(connections[i] && connections[i]->ply && connections[i]->ply->in && connections[i]->lsnd!=snd && connections[i]->ply->in->see(fr))
 		{	
 			connections[i]->lsnd=snd;	
-			buf[0]=SERV_NOISE;
-			calc::inttodat(snd,buf+1);
-			calc::inttodat(ship2pres(fr->self),buf+3);
-			connections[i]->hlpr->send(buf,SERV_NOISE_SZ);
+			if(connections[i]->hlpr)
+				connections[i]->hlpr->send(buf,SERV_NOISE_SZ);
 		}
 	}
 }
@@ -224,7 +253,8 @@ void server::registersound(ship* to,int snd)
 			connections[i]->lsnd=snd;
 			buf[0]=SERV_SND;
 			calc::inttodat(snd,buf+1);
-			connections[i]->hlpr->send(buf,SERV_SND_SZ);
+			if(connections[i]->hlpr)
+				connections[i]->hlpr->send(buf,SERV_SND_SZ);
 		}
 
 	}
@@ -240,7 +270,8 @@ void server::registershake(ship* to,int mag)
 		{
 			buf[0]=SERV_SHAKE;
 			calc::inttodat(mag,buf+1);
-			connections[i]->hlpr->send(buf,SERV_SHAKE_SZ);
+			if(connections[i]->hlpr)
+				connections[i]->hlpr->send(buf,SERV_SHAKE_SZ);
 		}
 
 	}
@@ -254,12 +285,14 @@ void server::quitsignal(int sig)
 server::server(int self,TCPsocket sock)
 {
 	unsigned long ip; //ip of connecting client
-	octets* oip; //Ip as octets, for writing to Ip record
+	octets* ip_octets; //Ip as octets, for writing to Ip record
 
 	this->self=self;
 	this->sock=sock;
 	hlpr=NULL;
 	hlpr=new sockhelper(sock);
+	if(!hlpr)
+		throw error("Failed to allocate sockhelper");
 	hlpr->pump();
 	auth=false;
 	lsnd=-1;
@@ -278,8 +311,8 @@ server::server(int self,TCPsocket sock)
 	log("Connection opened");
 	urat=10;
 	ip=SDLNet_TCP_GetPeerAddress(sock)->host;
-	oip=(octets*)&ip;
-	if(oip->o1==127 && oip->o2==0 && oip->o3==0 && oip->o4==1)
+	ip_octets=(octets*)&ip;
+	if(ip_octets->o1==127 && ip_octets->o2==0 && ip_octets->o3==0 && ip_octets->o4==1)
 		cbnd=999999999;
 	else
 		cbnd=0;
@@ -298,31 +331,61 @@ server::~server()
 	SDLNet_TCP_Close(sock);
 }
 
-void server::log(char* fmt,...)
+void server::log(const char* fmt,...)
 {
 	unsigned long ip; //ip of connecting client
 	octets* oip; //Ip as octets, for writing to Ip record
 	va_list fmts; //For resolving the format string
+	char sanitized_msg[512];
+	char temp_msg[512];
 
-	fprintf(logf,"%s: ",os::gettime());
-	fprintf(logf,"[%hd] ",self);
+	char log_prefix[256];
+	char sanitized_name[64] = "";
 	if(ply)
-		fprintf(logf,"%s ",ply->nam);
+	{
+		int k=0;
+		for(int j=0; j<63 && ply->nam[j]!='\0'; j++)
+		{
+			if(ply->nam[j]>=32 && ply->nam[j]<=126 && ply->nam[j]!='\n' && ply->nam[j]!='\r')
+				sanitized_name[k++] = ply->nam[j];
+		}
+		sanitized_name[k] = '\0';
+	}
+	if(sock && SDLNet_TCP_GetPeerAddress(sock))
+	{
+		ip=SDLNet_TCP_GetPeerAddress(sock)->host;
+		oip=(octets*)&ip;
+	}
 	else
-		fprintf(logf," ");
-	ip=SDLNet_TCP_GetPeerAddress(sock)->host;
-	oip=(octets*)&ip;
-	fprintf(logf,"(%hd.%hd.%hd.%hd) ",(int)oip->o1,(short)oip->o2,(short)oip->o3,(short)oip->o4);
+	{
+		ip=0;
+		oip=(octets*)&ip;
+	}
+	snprintf(log_prefix, sizeof(log_prefix), "%s: [%d] %s (%d.%d.%d.%d) ", 
+		os::gettime(), self, ply ? sanitized_name : "", 
+		(int)oip->o1, (int)oip->o2, (int)oip->o3, (int)oip->o4);
 	va_start(fmts,fmt);
-	vfprintf(logf,fmt,fmts);
+	int len = vsnprintf(temp_msg,sizeof(temp_msg),fmt,fmts);
 	va_end(fmts);
-	fprintf(logf,"\n");
+	if(len < 0 || len >= (int)sizeof(temp_msg)) {
+		fprintf(logf,"[LOG MESSAGE TOO LONG]\n");
+		fflush(logf);
+		return;
+	}
+	int k=0;
+	for(int j=0; j<len && j<511; j++)
+	{
+		if((temp_msg[j]>=32 && temp_msg[j]<=126) || temp_msg[j]==' ')
+			sanitized_msg[k++] = temp_msg[j];
+	}
+	sanitized_msg[k] = '\0';
+	fprintf(logf,"%s%s\n",log_prefix,sanitized_msg);
 	fflush(logf);
 }
 
 void server::poll()
 {
-	int typ,opr; //Action description
+	int action_type, operation; //Action description
 	unsigned char* buf; //Incoming data buffer
 	long sbnd; //Server bandwidth used by this player
 	unsigned char fldb[SERV_FLOOD_SZ]; //Flooding buffer
@@ -341,17 +404,17 @@ void server::poll()
 			buf=hlpr->request(3);
 			if(buf)
 			{
-				typ=((int)buf[0]);
-				opr=calc::dattoint(buf+1);
+				action_type=((int)buf[0]);
+				operation=calc::dattoint(buf+1);
 
-				if(typ>=0 && typ<32)
+				if(action_type>=0 && action_type<32)
 				{
-					if(typ==CLIENT_CHAR || !acth[typ])
+					if(action_type==CLIENT_CHAR || !acth[action_type])
 					{
-						action(typ,opr);
+						action(action_type,operation);
 						hlpr->suck();
 					}
-					acth[typ]=true;
+					acth[action_type]=true;
 				}
 				else
 					hlpr->suck();
@@ -366,14 +429,13 @@ void server::poll()
 		buf=hlpr->request(6);
 		if(buf)
 		{
-			if(calc::dateq((unsigned char*)SIGN,buf,6))
+			if(calc::data_arrays_equal((unsigned char*)SIGN,buf,6))
 				auth=true;
 			else
 				throw error("Using incorrect protocol");
 			hlpr->suck();
 			fldb[0]=SERV_FLOOD;
-			for(int i=1;i<SERV_FLOOD_SZ;i++)
-				fldb[i]=0;
+			memset(fldb+1, 0, SERV_FLOOD_SZ-1);
 			for(int i=0;i<110;i++)
 				hlpr->send(fldb,SERV_FLOOD_SZ);
 			changecmod(CMOD_NAME);
@@ -442,11 +504,12 @@ void server::action(int typ,short opr)
 						ply->in->enem=ship::get(opr-planet::ISIZE);
 						if(ply->in->enem==ply->in)
 							ply->in->enem=NULL;
-						if(ply->in->enem)
+						if(ply->in->enem) {
 							if(ply->in->all->opposes(ply->in->enem->all))
 								registersound(ply->in,SND_PROXIMITY);
 							else
 								registersound(ply->in,SND_BEEP2);
+						}
 					}
 				}
 				if(cmod==CMOD_SCAN || cmod==CMOD_HAIL || cmod==CMOD_WHOIS)
@@ -485,6 +548,9 @@ void server::action(int typ,short opr)
 					case REQ_HACK:
 					changecmod(CMOD_HACK);
 					break;
+
+					default:
+					break;
 				}
 				break;
 
@@ -515,10 +581,10 @@ void server::action(int typ,short opr)
 				break;
 
 				case CLIENT_BANDWIDTH:
-				if(opr>cbnd)
+				if(opr>cbnd && opr>0 && opr<999999999)
 				{
 					cbnd=opr;
-					log("Bandwidth exploration reports %ld maximum",cbnd);
+					log("Bandwidth exploration reports %ld maximum",(long)cbnd);
 				}
 				break;
 
@@ -546,9 +612,16 @@ void server::changecmod(int opr)
 	spr=-1;
 	txt[0]='\0';
 	if(ply && ply->in)
-		registersound(ply->in,SND_BEEP1);
+	{
+		try {
+			registersound(ply->in,SND_BEEP1);
+		} catch(...) {
+			// Ignore sound registration errors
+		}
+	}
 	if(cmod!=CMOD_NAME && cmod!=CMOD_PASS && cmod!=CMOD_CHOOSE && !(ply && ply->in))
 		return;
+ // amazonq-ignore-next-line
 	switch(opr)
 	{
 		case CMOD_NAME:
@@ -562,14 +635,22 @@ void server::changecmod(int opr)
 		break;
 
 		case CMOD_CHOOSE:
-		txtp+=sprintf(txtp,"Choose alliance\n");
-		for(int i=0;i<alliance::LIBSIZE;i++)
 		{
-			tali=alliance::get(i);
-			if(tali)
-				txtp+=sprintf(txtp,"[%hd] %s\n",i,tali->nam);
+			int remaining = sizeof(txt) - (txtp - txt);
+			int written = snprintf(txtp, remaining, "Choose alliance\n");
+			if(written > 0 && written < remaining) txtp += written;
+			for(int i=0;i<alliance::LIBSIZE;i++)
+			{
+				tali=alliance::get(i);
+				if(tali)
+				{
+					remaining = sizeof(txt) - (txtp - txt);
+					written = snprintf(txtp, remaining, "[%d] %s\n",i,tali->nam);
+					if(written > 0 && written < remaining) txtp += written;
+				}
+			}
+			printtocons(txt);
 		}
-		printtocons(txt);
 		break;
 
 		case CMOD_STAT:
@@ -633,11 +714,22 @@ void server::changecmod(int opr)
 		break;
 
 		case CMOD_CHAT:
-		txtp+=sprintf(txtp,"Messaging\n\n");
-		if(ply->in->enem && ply->in->enem->ply)
-			txtp+=sprintf(txtp,"[1] Chat with target player\n");
-		txtp+=sprintf(txtp,"[2] Chat with team\n");
-		txtp+=sprintf(txtp,"[3] Chat with all\n");
+		{
+			int remaining = sizeof(txt) - (txtp - txt);
+			int written = snprintf(txtp, remaining, "Messaging\n\n");
+			if(written > 0 && written < remaining) txtp += written;
+			if(ply->in->enem && ply->in->enem->ply) {
+				remaining = sizeof(txt) - (txtp - txt);
+				written = snprintf(txtp, remaining, "[1] Chat with target player\n");
+				if(written > 0 && written < remaining) txtp += written;
+			}
+			remaining = sizeof(txt) - (txtp - txt);
+			written = snprintf(txtp, remaining, "[2] Chat with team\n");
+			if(written > 0 && written < remaining) txtp += written;
+			remaining = sizeof(txt) - (txtp - txt);
+			written = snprintf(txtp, remaining, "[3] Chat with all\n");
+			if(written > 0 && written < remaining) txtp += written;
+		}
 		printtocons(txt);
 		break;
 
@@ -657,15 +749,25 @@ void server::changecmod(int opr)
 		break;
 
 		case CMOD_WHOIS:
-		txtp+=sprintf(txtp,"WHOIS\n\n");
-		if(ply->in->enem)
 		{
-			spr=ply->in->enem->interact(txtp,CMOD_WHOIS,-1,ply->in);
-			txtp=txt+strlen(txt);
+			int remaining = sizeof(txt) - (txtp - txt);
+			int written = snprintf(txtp, remaining, "WHOIS\n\n");
+			if(written > 0 && written < remaining) txtp += written;
+			if(ply->in->enem)
+			{
+				remaining = sizeof(txt) - (txtp - txt);
+				spr=ply->in->enem->interact(txtp,CMOD_WHOIS,-1,ply->in);
+				txtp=txt+strlen(txt);
+			}
+			else {
+				remaining = sizeof(txt) - (txtp - txt);
+				written = snprintf(txtp, remaining, "No target\n");
+				if(written > 0 && written < remaining) txtp += written;
+			}
+			remaining = sizeof(txt) - (txtp - txt);
+			written = snprintf(txtp, remaining, "\n[1] Cycle to next player");
+			if(written > 0 && written < remaining) txtp += written;
 		}
-		else
-			txtp+=sprintf(txtp,"No target\n");
-		txtp+=sprintf(txtp,"\n[1] Cycle to next player");
 		printtocons(txt);
 		spritetocons(spr);
 		break;
@@ -701,6 +803,8 @@ void server::changecmod(int opr)
 		requestline(false);
 		break;
 
+		default:
+		break;
 	}
 }
 
@@ -721,9 +825,14 @@ void server::cons(int opr)
 		tali=alliance::get(opr);
 		if(tali)
 		{
-			ply->spawn(tali);
-			log("Spawned as %s(%s)",ply->in->cls,ply->in->all->nam);
-			changecmod(CMOD_HACK);
+			try {
+				ply->spawn(tali);
+				log("Spawned as %s(%s)",ply->in->cls,ply->in->all->nam);
+				changecmod(CMOD_HACK);
+			} catch(error it) {
+				printtomesg(it.str);
+				changecmod(CMOD_CHOOSE);
+			}
 		}
 		else
 		{
@@ -759,20 +868,31 @@ void server::cons(int opr)
 			{
 				if(opr==5)
 				{
-					if(ply->in->see(ply->in->plnt))
-					{
-						if(ply->in->plnt->all==ply->in->all)
+					try {
+						if(!ply || !ply->in || !ply->in->plnt) {
+							throw error("Invalid player or planet state");
+						}
+						if(ply->in->see(ply->in->plnt))
 						{
-							ply->in->transport(ply->in->plnt);
-							ply->commit();
-							printtomesg("Restore position saved");
+							if(ply->in->plnt->all==ply->in->all)
+							{
+								ply->in->transport(ply->in->plnt);
+								ply->commit();
+								printtomesg("Restore position saved");
+							}
+							else
+								throw error("Cannot save with a different allegiance");
 						}
 						else
-							throw error("Cannot save with a different allegiance");
-					}
-					else
-					{
-						throw error("Out of range");
+						{
+							throw error("Out of range");
+						}
+					} catch(error it) {
+						printtomesg(it.str);
+						log("Transport error: %s", it.str);
+					} catch(...) {
+						printtomesg("Unknown error during transport operation");
+						log("Unknown transport error");
 					}
 				}
 				else if(opr==4)
@@ -845,6 +965,10 @@ void server::cons(int opr)
 			}
 		}
 		break;
+
+		default:
+		log("Unknown command mode: %d", cmod);
+		break;
 	}
 }
 
@@ -854,7 +978,8 @@ void server::requestline(bool hide)
 
 	buf[0]=SERV_READLN;
 	buf[1]=(unsigned char)hide;
-	hlpr->send(buf,SERV_READLN_SZ);
+	if(hlpr)
+		hlpr->send(buf,SERV_READLN_SZ);
 }
 
 void server::input()
@@ -868,7 +993,7 @@ void server::input()
 			throw error("Aborted name entry");
 		try
 		{
-			if(strlen(inpb)<2)
+			if(inpb[0]=='\0' || inpb[1]=='\0')
 			{
 				inpb[0]='\0';
 				throw error("Name too short");
@@ -898,7 +1023,17 @@ void server::input()
 		catch(error it)
 		{
 			ply=NULL;	
-			log(it.str);
+			{
+				char sanitized_error[256];
+				int k=0;
+				for(int j=0; j<255 && it.str[j]!='\0'; j++)
+				{
+					if(it.str[j]>=32 && it.str[j]<=126 && it.str[j]!='\n' && it.str[j]!='\r')
+						sanitized_error[k++] = it.str[j];
+				}
+				sanitized_error[k] = '\0';
+				log("%s", sanitized_error);
+			}
 			printtomesg(it.str);
 			changecmod(CMOD_NAME);
 		}
@@ -913,7 +1048,8 @@ void server::input()
 		}
 		catch(error it)
 		{
-			ply=NULL;	
+			ply=NULL;
+			// log("%s", it.str);
 			log(it.str);
 			printtomesg(it.str);
 			changecmod(CMOD_NAME);
@@ -922,7 +1058,8 @@ void server::input()
 
 		case CMOD_PASS1:
 		inpb[32]='\0';
-		strcpy(tpas,inpb);
+		strncpy(tpas,inpb,32);
+		tpas[32]='\0';
 		changecmod(CMOD_PASS2);
 		break;
 
@@ -970,7 +1107,17 @@ void server::input()
 		break;
 
 		case CMOD_KICK:
-		log("Attemped kick of %s",inpb);
+		{
+			char sanitized_name[65];
+			int k=0;
+			for(int j=0; j<64 && inpb[j]!='\0'; j++)
+			{
+				if(inpb[j]>=32 && inpb[j]<=126 && inpb[j]!='\n' && inpb[j]!='\r')
+					sanitized_name[k++] = inpb[j];
+			}
+			sanitized_name[k] = '\0';
+			log("Attemped kick of %s",sanitized_name);
+		}
 		for(int i=0;i<ISIZE;i++)
 		{
 			if(connections[i] && connections[i]!=this && connections[i]->ply && strcmp(inpb,connections[i]->ply->nam)==0)
@@ -984,7 +1131,17 @@ void server::input()
 		break;
 		
 		case CMOD_DELETE:
-		log("Attemped deletion of %s",inpb);
+		{
+			char sanitized_name[65];
+			int k=0;
+			for(int j=0; j<64 && inpb[j]!='\0'; j++)
+			{
+				if(inpb[j]>=32 && inpb[j]<=126 && inpb[j]!='\n' && inpb[j]!='\r')
+					sanitized_name[k++] = inpb[j];
+			}
+			sanitized_name[k] = '\0';
+			log("Attemped deletion of %s",sanitized_name);
+		}
  		for(int i=0;i<ISIZE;i++)
 		{
 			if(connections[i] && connections[i]!=this && connections[i]->ply && strcmp(inpb,connections[i]->ply->nam)==0)
@@ -1000,30 +1157,37 @@ void server::input()
 		changecmod(CMOD_HACK);
 		break;
 
- 
+		default:
+		log("Unknown input mode: %d", cmod);
+		changecmod(CMOD_NAME);
+		break;
 	}
 }
 
-void server::printtocons(char* fmt,...)
+void server::printtocons(const char* fmt,...)
 {
 	unsigned char buf[1028]; //Outgoing buffer
 	va_list fmts;
 
 	va_start(fmts,fmt);
-	vsprintf((char*)buf+3,fmt,fmts);
+	int len = vsnprintf((char*)buf+3,1024,fmt,fmts);
 	va_end(fmts);
+	if(len < 0 || len >= 1024) {
+		throw error("Console message too long");
+	}
 
 	buf[0]=SERV_CONS;
-	calc::inttodat(strlen((char*)buf+3),buf+1);
+	calc::inttodat(len,buf+1);
 
-	hlpr->send(buf,strlen((char*)buf+3)+3);
+	if(hlpr)
+		hlpr->send(buf,len+3);
 }
 
 void server::spritetocons(int indx)
 {
 	unsigned char buf[SERV_CSPR_SZ]; //Outgoing buffer
 
-	if(indx>=0)
+	if(indx>=0 && hlpr)
 	{
 		buf[0]=SERV_CSPR;
 		calc::inttodat(indx,buf+1);
@@ -1031,7 +1195,7 @@ void server::spritetocons(int indx)
 	}
 }
 
-void server::printtomesg(char* fmt,...)
+void server::printtomesg(const char* fmt,...)
 {
 	unsigned char buf[132]; //Outgoing buffer
 	va_list fmts;
@@ -1039,13 +1203,17 @@ void server::printtomesg(char* fmt,...)
 	if(fmt[0]!='\0')
 	{
 		va_start(fmts,fmt);
-		vsprintf((char*)buf+3,fmt,fmts);
+		int len = vsnprintf((char*)buf+3,128,fmt,fmts);
 		va_end(fmts);
+		if(len < 0 || len >= 128) {
+			throw error("Message too long");
+		}
 
 		buf[0]=SERV_MESG;
-		calc::inttodat(strlen((char*)buf+3),buf+1);
+		calc::inttodat(len,buf+1);
 
-		hlpr->send(buf,strlen((char*)buf+3)+3);
+		if(hlpr)
+			hlpr->send(buf,len+3);
 	}
 }
 
@@ -1055,18 +1223,19 @@ void server::uploads()
 
 	if(ply && ply->in)
 	{
-		ply->in->netout(SERV_SELF,buf);
+		if(!hlpr) return;
+		ply->in->serialize_to_network(SERV_SELF,buf);
 		hlpr->send(buf,SERV_SELF_SZ);
 		calc::inttodat(foc,buf+21);
 		/*if(!shpu[ply->in->self])
 		{
-			ply->in->netout(SERV_NEW,buf);
+			ply->in->serialize_to_network(SERV_NEW,buf);
 			hlpr->send(buf,SERV_NEW_SZ);
-			ply->in->netout(SERV_NAME,buf);
+			ply->in->serialize_to_network(SERV_NAME,buf);
 			hlpr->send(buf,SERV_NAME_SZ);
 			shpu[ply->in->self]=true;
 		}
-		ply->in->netout(SERV_UPD,buf);
+		ply->in->serialize_to_network(SERV_UPD,buf);
 		buf[21]=0;
 		hlpr->send(buf,SERV_UPD_SZ);*/
 		
@@ -1086,6 +1255,7 @@ void server::uploadplanets()
 	unsigned char buf[256]; //Outgoing scratchpad buffer to use
 	planet* tpln; //Concerned planet
 
+	if(!hlpr) return;
 	for(int i=0;i<planet::ISIZE;i++)
 	{
 		tpln=planet::get(i);
@@ -1095,13 +1265,13 @@ void server::uploadplanets()
 			{
 				if(!plnu[i])
 				{
-					tpln->netout(SERV_NEW,buf);
+					tpln->serialize_to_network(SERV_NEW,buf);
 					hlpr->send(buf,SERV_NEW_SZ);
-					tpln->netout(SERV_NAME,buf);
+					tpln->serialize_to_network(SERV_NAME,buf);
 					hlpr->send(buf,SERV_NAME_SZ);
 					plnu[i]=true;
 				}
-				tpln->netout(SERV_UPD,buf);
+				tpln->serialize_to_network(SERV_UPD,buf);
 				hlpr->send(buf,SERV_UPD_SZ);
 			}
 			else
@@ -1133,6 +1303,7 @@ void server::uploadships()
 	unsigned char buf[256]; //Outgoing scratchpad buffer to use
 	ship* tshp; //Concerned ship
 
+	if(!hlpr) return;
 	for(int i=0;i<ship::ISIZE;i++)
 	{
 		tshp=ship::get(i);
@@ -1144,13 +1315,13 @@ void server::uploadships()
 				{
 					if(!shpu[i])
 					{
-						tshp->netout(SERV_NEW,buf);
+						tshp->serialize_to_network(SERV_NEW,buf);
 						hlpr->send(buf,SERV_NEW_SZ);
-						tshp->netout(SERV_NAME,buf);
+						tshp->serialize_to_network(SERV_NAME,buf);
 						hlpr->send(buf,SERV_NAME_SZ);
 						shpu[i]=true;
 					}
-					tshp->netout(SERV_UPD,buf);
+					tshp->serialize_to_network(SERV_UPD,buf);
 					if(ply->in->all->opposes(tshp->all))
 						buf[21]=1;
 					hlpr->send(buf,SERV_UPD_SZ);
@@ -1185,6 +1356,7 @@ void server::uploadfrags()
 	unsigned char buf[256]; //Outgoing scratchpad buffer to use
 	frag* tfrg; //Concerned frag
 
+	if(!hlpr) return;
 	for(int i=0;i<frag::ISIZE;i++)
 	{
 		tfrg=frag::get(i);
@@ -1194,14 +1366,14 @@ void server::uploadfrags()
 			{
 				if(frgu[i])
 				{
-					tfrg->netout(SERV_UPD,buf);
+					tfrg->serialize_to_network(SERV_UPD,buf);
 					hlpr->send(buf,SERV_UPD_SZ);
 				}
 				else
 				{
-					tfrg->netout(SERV_NEW,buf);
+					tfrg->serialize_to_network(SERV_NEW,buf);
 					hlpr->send(buf,SERV_NEW_SZ);
-					tfrg->netout(SERV_UPD,buf);
+					tfrg->serialize_to_network(SERV_UPD,buf);
 					hlpr->send(buf,SERV_UPD_SZ);
 					frgu[i]=true;
 				}
@@ -1241,12 +1413,14 @@ void server::kill()
 		uploadfrags();
 		buf[0]=SERV_DEL;
 		calc::inttodat(ship2pres(ply->in->self),buf+1);
-		hlpr->send(buf,SERV_DEL_SZ);
+		if(hlpr)
+			hlpr->send(buf,SERV_DEL_SZ);
 		printtomesg("You have been destroyed: Game Over");
 		printtocons("Game over");
 	}
 	catch(error it)
 	{
+		log("Error in kill(): %s", it.str);
 	}
 }
 
@@ -1254,7 +1428,7 @@ void server::hilight(ship* tshp)
 {
 	unsigned char buf[SERV_HILIGHT_SZ]; //Buffer for sending hilight information
 
-	if(tshp)
+	if(tshp && hlpr)
 	{
 		buf[0]=SERV_HILIGHT;
 		calc::inttodat(ship2pres(tshp->self),buf+1);

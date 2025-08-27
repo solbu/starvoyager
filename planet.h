@@ -26,8 +26,8 @@ class planet //Planet object
 	static void purgeall(); //Cleans up and purges planet data, used after a game
 	static planet* get(int indx); //Return the planet of given index
 	static planet* pick(alliance* tali); //Pick a random planet of given alliance
-	static planet* pickally(alliance* tali); //Pick a random planet allied to given alliance
-	static planet* pickhostile(alliance* tali); //Pick a random planet hostile to given alliance
+	static planet* find_allied_planet(alliance* tali); //Pick a random planet allied to given alliance
+	static planet* find_hostile_planet(alliance* tali); //Pick a random planet hostile to given alliance
 	static bool masslock(cord loc); //Return whether or not given location is mass-locked by planets
 	static void saveall(); //Save all the planets to the database
 	static void loadall(); //Load all the planets from the database
@@ -35,7 +35,7 @@ class planet //Planet object
 	static void shipyards(); //Randomly spawn ships
 
 	int interact(char* txt,short cmod,short opr,ship* mshp); //Handles a server request for information/action from this planet, with the given comm mode, operand and player's ship, writing the text into txt and returning the sprite index (-1 if n/a)
-	void netout(int typ,unsigned char* buf); //Get type of data from planet into a network buffer
+	void serialize_to_network(int typ,unsigned char* buf); //Get type of data from planet into a network buffer
 
 	int self; //Self index
 	int spr; //Sprite to display for this

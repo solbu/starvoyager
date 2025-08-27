@@ -4,7 +4,18 @@
 	(c) Richard Thrippleton
 	Licensing terms are in the 'LICENSE' file
 	If that file is not included with this source then permission is not given to use this source in any way whatsoever.
+	
+	COORDINATE SYSTEM NOTE:
+	This game uses COMPASS/NAVIGATION coordinate system:
+	- 0° = North (positive Y)
+	- 90° = East (positive X) 
+	- 180° = South (negative Y)
+	- 270° = West (negative X)
+	Angles increase clockwise. See COORDINATE_SYSTEM.md for details.
 */
+
+#ifndef CALC_H
+#define CALC_H
 
 #include <math.h>
 #include <SDL_types.h>
@@ -38,6 +49,9 @@ inline vect pol::tovect()
 	vect out; //Return value
 	double cang; //Converted angle
 
+	// COORDINATE SYSTEM: Game uses compass convention (0°=North, 90°=East)
+	// Mathematical convention is (0°=East, 90°=North)
+	// Subtract 90° to convert from game angle to mathematical angle
 	cang=((ang-90)*M_PI)/180;
 	out.xx=rad*cos(cang);
 	out.yy=rad*sin(cang);
@@ -48,6 +62,7 @@ inline pol vect::topol()
 {
 	pol out; //Return value
 
+	// COORDINATE SYSTEM: Converts Cartesian to compass angles
 	out.rad=sqrt(xx*xx+yy*yy);
 	if(xx!=0)
 	{
@@ -70,9 +85,9 @@ inline pol vect::topol()
 	else
 	{
 		if(yy>0)
-			out.ang=180;
+			out.ang=180; // South (positive Y in compass system)
 		else
-			out.ang=0;
+			out.ang=0;   // North (negative Y in compass system)
 	}
 	return out;
 }
@@ -101,6 +116,8 @@ inline ivect ipol::tovect()
 	ivect out; //Return value
 	double cang; //Converted angle
 
+	// COORDINATE SYSTEM: Game uses compass convention (0°=North, 90°=East)
+	// Subtract 90° to convert from game angle to mathematical angle
 	cang=(((double)ang-90)*M_PI)/180;
 	out.xx=(long)(rad*cos(cang));
 	out.yy=(long)(rad*sin(cang));
@@ -111,6 +128,7 @@ inline ipol ivect::topol()
 {
 	ipol out; //Return value
 
+	// COORDINATE SYSTEM: Converts Cartesian to compass angles (integer version)
 	out.rad=(long)sqrt(xx*xx+yy*yy);
 	if(xx!=0)
 	{
@@ -133,9 +151,9 @@ inline ipol ivect::topol()
 	else
 	{
 		if(yy>0)
-			out.ang=180;
+			out.ang=180; // South (positive Y in compass system)
 		else
-			out.ang=0;
+			out.ang=0;   // North (negative Y in compass system)
 	}
 	return out;
 }
@@ -225,10 +243,12 @@ class calc //Mathematics module
 			out[1]=tmpp[1];
 			return;
 		}
-        static bool dateq(unsigned char* d1,unsigned char* d2,int n); //Test two data streams for equality, up to n bytes
-		static void obscure(char* str); //Munges the string so it is no longer human readable; the munging is consisten, like a very weak crypt
+        static bool data_arrays_equal(unsigned char* d1,unsigned char* d2,int n); //Test two data streams for equality, up to n bytes
+		static void encrypt_password(char* str); //Munges the string so it is no longer human readable; the munging is consisten, like a very weak crypt
 
         private:
-        static long wrp[10]; //Warp speed table
-        static char spds[33]; //Speed string (saves having to malloc, but it ain't threadsafe!)
+        static long warp_speed_table[10]; //Warp speed table
+        static char speed_string_buffer[33]; //Speed string (saves having to malloc, but it ain't threadsafe!)
 };
+
+#endif // CALC_H

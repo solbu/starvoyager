@@ -1,0 +1,27 @@
+{
+  "configurations": [
+    {
+      "name": "Linux",
+      "includePath": [
+        "${workspaceFolder}/**",
+        "/usr/include/SDL",
+        "/usr/include/SDL2"
+      ],
+      "defines": [
+        "POSIX",
+        "VERSION=\"0.5.0\"",
+        "DATADIR=\"./data\""
+        //"DATADIR=\"/usr/share/games/starvoyager\""
+      ],
+      "compilerPath": "/usr/bin/c++",
+      "cStandard": "c11",
+      "cppStandard": "c++14",
+      "intelliSenseMode": "linux-gcc-x64",
+      "compilerArgs": [
+        "-Wall",
+        "-ggdb3"
+      ]
+    }
+  ],
+  "version": 4
+}

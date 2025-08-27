@@ -16,9 +16,21 @@
 #include "protocol.h"
 #include "planet.h"
 
+// Planet sprite constants
+const int STAR_SPRITE_LOW = 100;
+const int STAR_SPRITE_HIGH = 103;
+const int UNINHABITED_SPRITE_LOW = 110;
+const int UNINHABITED_SPRITE_HIGH = 116;
+const int INHABITED_SPRITE_LOW = 120;
+const int INHABITED_SPRITE_HIGH = 124;
+const int MASS_LOCK_DISTANCE = 20000;
+const int SPAWN_RADIUS = 150;
+const int MAX_EQUIPMENT_SLOTS = 8;
+const int MAX_SYLLABLES = 16;
+
 planet::planet(char* nam,cord put,int typ,alliance* all)
 {
-	const int slo=100,shi=103,ulo=110,uhi=116,ilo=120,ihi=124; //Boundings for planet sprites
+	const int slo=STAR_SPRITE_LOW,shi=STAR_SPRITE_HIGH,ulo=UNINHABITED_SPRITE_LOW,uhi=UNINHABITED_SPRITE_HIGH,ilo=INHABITED_SPRITE_LOW,ihi=INHABITED_SPRITE_HIGH; //Boundings for planet sprites
 
 	self=-1;
 	for(int i=0;i<ISIZE && self==-1;i++)
@@ -42,7 +54,7 @@ planet::planet(char* nam,cord put,int typ,alliance* all)
 	if(typ==INHABITED)
 		spr=ilo+calc::rnd(ihi-ilo+1);
 	this->typ=typ;
-	for(int j=0;j<8;j++)
+	for(int j=0;j<MAX_EQUIPMENT_SLOTS;j++)
 		sold[j]=all->getequip();
 }
 
@@ -98,7 +110,7 @@ planet* planet::pick(alliance* tali)
 	return NULL;
 }
 
-planet* planet::pickally(alliance* tali)
+planet* planet::find_allied_planet(alliance* tali)
 {
 	for(int i=0,j=0;i<ISIZE;i++)
 	{
@@ -109,7 +121,7 @@ planet* planet::pickally(alliance* tali)
 	return NULL;
 }
 
-planet* planet::pickhostile(alliance* tali)
+planet* planet::find_hostile_planet(alliance* tali)
 {
 	for(int i=0,j=0;i<ISIZE;i++)
 	{
@@ -130,7 +142,7 @@ bool planet::masslock(cord loc)
 		{
 			dx=loc.x-planets[i]->loc.x;
 			dy=loc.y-planets[i]->loc.y;
-			if(dx<20000 && dx>-20000 && dy>-20000 && dy<20000)
+			if(dx<MASS_LOCK_DISTANCE && dx>-MASS_LOCK_DISTANCE && dy>-MASS_LOCK_DISTANCE && dy<MASS_LOCK_DISTANCE)
 				return true;
 		}
 	}
@@ -145,7 +157,7 @@ void planet::saveall()
 	{
 		if(planets[i])
 		{
-			sprintf(obsc,"Planet%hd",i);
+			sprintf(obsc,"Planet%d",i);
 			database::putobject(obsc);
 			planets[i]->save();
 		}
@@ -173,9 +185,9 @@ void planet::generatename(char* put)
 	const char n3[][16]={"is","ia","ol","ion","on","ath","ur","e","ise","at","","","","","",""};
 	int s1,s2,s3; //Syllable selectors
 
-	s1=calc::rnd(16);
-	s2=calc::rnd(16);
-	s3=calc::rnd(16);
+	s1=calc::rnd(MAX_SYLLABLES);
+	s2=calc::rnd(MAX_SYLLABLES);
+	s3=calc::rnd(MAX_SYLLABLES);
 	sprintf(put,"%s%s%s",n1[s1],n2[s2],n3[s3]);
 }
 
@@ -183,7 +195,7 @@ void planet::shipyards()
 {
 	planet* tpln; //Planet to spawn at
 
-	if(ship::freeslot())
+	if(ship::has_available_ship_slot())
 	{
 		tpln=planets[calc::rnd(ISIZE)];
 		if(tpln && tpln->typ==INHABITED)
@@ -311,7 +323,7 @@ int planet::interact(char* txt,short cmod,short opr,ship* mshp)
 		if(opr==-1)
 		{
 			txt+=sprintf(txt,"Hailing %s\n\nEquipment\n\n",nam);
-			for(int i=0;i<8;i++)
+			for(int i=0;i<MAX_EQUIPMENT_SLOTS;i++)
 			{
 				if(sold[i])
 				{
@@ -319,9 +331,9 @@ int planet::interact(char* txt,short cmod,short opr,ship* mshp)
 					txt+=sprintf(txt,"[%hd] %s \nCost: %ld C  Mass: %hd\n",i+1,sold[i]->nam,cost,sold[i]->mss);
 				}
 			}
-			txt+=sprintf(txt,"\nAvailable mass: %hd\n",mshp->freemass());
+			txt+=sprintf(txt,"\nAvailable mass: %hd\n",mshp->get_available_cargo_space());
 		}
-		if(opr>=1 && opr<=8 && sold[opr-1])
+		if(opr>=1 && opr<=MAX_EQUIPMENT_SLOTS && sold[opr-1])
 		{
 			//cost=mshp->purchase(sold[opr-1],all->ripo,false);
 			
@@ -337,8 +349,11 @@ int planet::interact(char* txt,short cmod,short opr,ship* mshp)
 	return -1;
 }
 
-void planet::netout(int typ,unsigned char* buf)
+void planet::serialize_to_network(int typ,unsigned char* buf)
 {
+	if(!buf)
+		return;
+	
 	buf[0]=typ;
 	buf+=1;
 
@@ -356,9 +371,9 @@ void planet::netout(int typ,unsigned char* buf)
 		break;
 
 		case SERV_NAME:
-		sprintf((char*)buf,"%s",nam);
+		snprintf((char*)buf,64,"%s",nam);
 		buf+=64;
-		sprintf((char*)buf,"%s",all->nam);
+		snprintf((char*)buf,64,"%s",all->nam);
 		buf+=64;
 		break;
 
@@ -388,7 +403,7 @@ planet::planet(int self)
 	this->self=-1;
 	if(planets[self])
 		throw error("This planet slot already taken");
-	sprintf(obsc,"Planet%hd",self);
+	sprintf(obsc,"Planet%d",self);
 	database::switchobj(obsc);
 	load();
 	this->self=self;
@@ -408,9 +423,9 @@ void planet::save()
 	database::putvalue("XLoc",loc.x);
 	database::putvalue("YLoc",loc.y);
 	database::putvalue("Type",typ);
-	for(int i=0;i<8;i++)
+	for(int i=0;i<MAX_EQUIPMENT_SLOTS;i++)
 	{
-		sprintf(atsc,"Sold%hd",i);
+		sprintf(atsc,"Sold%d",i);
 		if(sold[i])
 			database::putvalue(atsc,sold[i]->self);
 		else
@@ -429,9 +444,9 @@ void planet::load()
 	loc.x=database::getvalue("XLoc");
 	loc.y=database::getvalue("YLoc");
 	typ=database::getvalue("Type");
-	for(int i=0;i<8;i++)
+	for(int i=0;i<MAX_EQUIPMENT_SLOTS;i++)
 	{
-		sprintf(atsc,"Sold%hd",i);
+		sprintf(atsc,"Sold%d",i);
 		sold[i]=equip::get(database::getvalue(atsc));
 	}
 }
@@ -443,8 +458,8 @@ void planet::shipyard()
 	ship* tshp; //Ship being spawned
 	int aity; //AI type to spawn
 
-	put.x=loc.x+calc::rnd(150)-calc::rnd(150);
-	put.y=loc.y+calc::rnd(150)-calc::rnd(150);
+	put.x=loc.x+calc::rnd(SPAWN_RADIUS)-calc::rnd(SPAWN_RADIUS);
+	put.y=loc.y+calc::rnd(SPAWN_RADIUS)-calc::rnd(SPAWN_RADIUS);
 
 	lshp=all->getspawn();
 	aity=all->getai();

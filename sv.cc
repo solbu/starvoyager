@@ -8,9 +8,9 @@
 
 #include <SDL.h>
 #include <SDL_net.h>
-#include <signal.h>
-#include <string.h>
-#include <stdlib.h>
+#include <csignal>
+#include <cstring>
+#include <cstdlib>
 #include "calc.h"
 #include "graphic.h"
 #include "ship.h"
@@ -38,7 +38,7 @@ int main(int argc,char* argv[])
 	char path[sizeof(DATADIR)+16]; //Pathnames for databases
 	bool hles; //Headless?
 	bool bigs; //Big screen?
-	bool load; //Load universe on startup?
+
 	bool full; //Fullscreen?
 	FILE* clog; //Crash log
 
@@ -62,7 +62,7 @@ int main(int argc,char* argv[])
 
 		hles=false;
 		bigs=false;
-		load=false;
+
 		full=false;
 
 		for(int i=1;i<argc;i++)
@@ -96,12 +96,20 @@ int main(int argc,char* argv[])
 			}
 		}
 
-		sprintf(path,"%s/ships.svd",DATADIR);
-		database::openreader(fopen(path,"r"));
-		sprintf(path,"%s/equip.svd",DATADIR);
-		database::openreader(fopen(path,"r"));
-		sprintf(path,"%s/alliances.svd",DATADIR);
-		database::openreader(fopen(path,"r"));
+		snprintf(path,sizeof(path),"%s/ships.svd",DATADIR);
+		FILE* ships_file = fopen(path,"r");
+		if(!ships_file) throw error("Cannot open ships.svd");
+		database::openreader(ships_file);
+		
+		snprintf(path,sizeof(path),"%s/equip.svd",DATADIR);
+		FILE* equip_file = fopen(path,"r");
+		if(!equip_file) throw error("Cannot open equip.svd");
+		database::openreader(equip_file);
+		
+		snprintf(path,sizeof(path),"%s/alliances.svd",DATADIR);
+		FILE* alliances_file = fopen(path,"r");
+		if(!alliances_file) throw error("Cannot open alliances.svd");
+		database::openreader(alliances_file);
 
 		equip::loadlib();
 		ship::loadlib();

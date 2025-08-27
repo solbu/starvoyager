@@ -17,17 +17,24 @@
 #include "server.h"
 #include "player.h"
 
-long lcount=0;
+long player_count=0;
 
 player::player()
 {
-	lcount++;
+	self=-1;
+	in=NULL;
+	mshp=NULL;
+	pass[0]='\0';
+	op=false;
+	cash=0;
+	cashi=0;
+	player_count++;
 }
 
 player::player(char* nam)
 {
 	self=-1;
-	nam[32]='\0';
+	if(strlen(nam) > 32) nam[32]='\0';
 	for(int i=0;i<ISIZE && self==-1;i++)
 	{
 		if(!players[i])
@@ -36,7 +43,7 @@ player::player(char* nam)
 	if(self==-1)
 		throw error("No more space for new accounts");
 	players[self]=this;
-	sprintf(this->nam,"%s",nam);
+	snprintf(this->nam,sizeof(this->nam),"%s",nam);
 	pass[0]='\0';
 	in=NULL;
 	if(self==0)
@@ -46,7 +53,7 @@ player::player(char* nam)
 	mshp=NULL;
 	cash=0;
 	cashi=0;
-	lcount++;
+	player_count++;
 }
 
 player::~player()
@@ -58,7 +65,7 @@ player::~player()
 		delete mshp;
 	if(in)
 		delete in;
-	lcount--;
+	player_count--;
 }
 
 void player::init()
@@ -84,7 +91,7 @@ void player::saveall()
 	{
 		if(players[i] && players[i]->mshp)
 		{
-			sprintf(obsc,"Account%hd",i);
+			snprintf(obsc,sizeof(obsc),"Account%hd",i);
 			database::putobject(obsc);
 			players[i]->save();
 		}
@@ -99,7 +106,7 @@ void player::loadall()
 	{
 		try
 		{
-			sprintf(obsc,"Account%hd",i);
+			snprintf(obsc,sizeof(obsc),"Account%hd",i);
 			database::switchobj(obsc);
 			players[i]=new player();
 			players[i]->self=i;
@@ -122,14 +129,14 @@ player* player::get(char* nam)
 void player::spawn(alliance* tali)
 {
 	planet* tpln; //Planet to spawn near
-	cord sloc; //Location to spawn at
+	cord spawn_location; //Location to spawn at
 
 	tpln=planet::pick(tali);
 	if(tpln)
 	{	
-		sloc=tpln->loc;
-		sloc.x+=calc::rnd(150)-calc::rnd(150);
-		sloc.y+=calc::rnd(150)-calc::rnd(150);
+		spawn_location=tpln->loc;
+		spawn_location.x+=calc::rnd(150)-calc::rnd(150);
+		spawn_location.y+=calc::rnd(150)-calc::rnd(150);
 		if(mshp)
 			delete mshp;
 		if(!(tali->spw))
@@ -138,7 +145,7 @@ void player::spawn(alliance* tali)
 		}
 		try
 		{
-			mshp=new ship(sloc,tali->spw,tali,ship::AI_NULL);
+			mshp=new ship(spawn_location,tali->spw,tali,ship::AI_NULL);
 		}
 		catch(error it)
 		{
@@ -154,7 +161,12 @@ void player::spawn(alliance* tali)
 		}
 		catch(error it)
 		{
+			if(mshp) {
+				delete mshp;
+				mshp=NULL;
+			}
 			delete in;
+			in=NULL;
 			throw it;
 		}
 	}
@@ -170,10 +182,10 @@ void player::login(char* pass)
 		throw error("No ship associated with this user");
 	if(pass)
 	{
-		pass[32]='\0';
+		if(strlen(pass) > 32) pass[32]='\0';
 		if(pass[0]=='\0')
 			throw error("Invalid password");
-		calc::obscure(pass);
+		calc::encrypt_password(pass);
 		if(strcmp(pass,this->pass)!=0)
 			throw error("Invalid password");
 	}
@@ -195,8 +207,8 @@ void player::login(char* pass)
 
 void player::setpass(char* pass)
 {
-	sprintf(this->pass,"%s",pass);
-	calc::obscure(this->pass);
+	snprintf(this->pass,sizeof(this->pass),"%s",pass);
+	calc::encrypt_password(this->pass);
 }
 
 void player::commit()
@@ -207,6 +219,7 @@ void player::commit()
 	{
 		mshp->ply=NULL;
 		delete mshp;
+		mshp=NULL;
 	}
 	mshp=new ship();
 	*mshp=*in;
@@ -233,7 +246,10 @@ void player::debit(long amt)
 
 void player::credit(long amt)
 {
-	cashi+=amt;
+	if(amt > 999999999 - cashi)
+		cashi = 999999999;
+	else
+		cashi+=amt;
 	if(cashi>999999999)
 		cashi=999999999;
 }
@@ -259,7 +275,8 @@ void player::save()
 	database::putvalue("Password",pass);
 	database::putvalue("Op",op);
 	database::putvalue("Cash",cash);
-	mshp->save();
+	if(mshp)
+		mshp->save();
 }
 
 void player::load()
@@ -269,8 +286,28 @@ void player::load()
 	database::getvalue("Password",pass);
 	op=database::getvalue("Op");
 	cash=database::getvalue("Cash");
-	mshp=new ship();
-	mshp->load();
+	// Safely delete existing ship if it exists
+	if(mshp)
+	{
+		mshp->ply=NULL;
+		delete mshp;
+	}
+	mshp=NULL;
+	// Create new ship and load its data
+	try {
+		mshp=new ship();
+		// Ensure ship doesn't point back to player during loading
+		mshp->ply=NULL;
+		mshp->load();
+		// Don't set mshp->ply here - it should remain NULL for saved ships
+	} catch(...) {
+		// If ship loading fails, clean up
+		if(mshp) {
+			delete mshp;
+			mshp=NULL;
+		}
+		throw;
+	}
 }
 
 player* player::players[ISIZE];

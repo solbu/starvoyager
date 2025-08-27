@@ -11,11 +11,10 @@
 #include <signal.h>
 #include "error.h"
 
-error::error(char* str)
+error::error(const char* str)
 {
-	if(strlen(str)>128)
-		str[128]='\0';
-	strcpy(this->str,str);
+	strncpy(this->str, str, 128);
+	this->str[128] = '\0';
 }
 
 void error::debug(const char* str,long num)

@@ -21,26 +21,36 @@ CFLAGS += -O2
 endif
 #CFLAGS:=`sdl-config --cflags` -ggdb3 -Wall -Werror -ansi -pedantic
 PACKAGENAME=$(NAME)-$(VERSION)-`uname -m`-`uname|tr [A-Z] [a-z]`.bin
+
+# Automatic dependency generation
+DEPDIR := .deps
+DEPFLAGS = -MT $@ -MMD -MP -MF $(DEPDIR)/$*.d
+
 .SUFFIXES: .c .cc
+.PHONY: all clean install install-data install-bin uninstall binary dist test test-headless test-quick check distclean coverage
 
 all: starvoyager
 
 #Linking
-starvoyager: alliance.o camera.o database.o error.o game.o interface.o presence.o ship.o sound.o ticker.o calc.o client.o equip.o frag.o graphic.o planet.o server.o sockhelper.o sv.o player.o os.o SDL_rotozoom.o SDL_gfxPrimitives.o
+starvoyager: alliance.o camera.o database.o error.o game.o interface.o presence.o ship.o sound.o ticker.o calc.o client.o equip.o frag.o graphic.o planet.o server.o sockhelper.o sv.o player.o os.o SDL_rotozoom.o SDL_gfxPrimitives.o SDL_gfxBlitFunc.o
 	$(CC) -o $(NAME) $^ $(LIBS)
 
 #Include dependencies
-*.o: *.h
+# More specific dependency rules would go here if needed
 
-#Compiling
+#Compiling SDL_gfx files without warnings
 SDL_rotozoom.o: SDL_rotozoom.c
-	$(CC) $(CFLAGS) -c -o SDL_rotozoom.o SDL_rotozoom.c
+	$(CC) `sdl-config --cflags` -w -c -o SDL_rotozoom.o SDL_rotozoom.c
 
 SDL_gfxPrimitives.o: SDL_gfxPrimitives.c
-	$(CC) $(CFLAGS) -c -o SDL_gfxPrimitives.o SDL_gfxPrimitives.c
+	$(CC) `sdl-config --cflags` -w -c -o SDL_gfxPrimitives.o SDL_gfxPrimitives.c
+
+SDL_gfxBlitFunc.o: SDL_gfxBlitFunc.c
+	$(CC) `sdl-config --cflags` -w -c -o SDL_gfxBlitFunc.o SDL_gfxBlitFunc.c
 
 .cc.o:
-	$(CPPC) $(CFLAGS) -DPOSIX -DVERSION=\"${VERSION}\" -DDATADIR=\"${DATADIR}\" -c -o $@ $<
+	@mkdir -p $(DEPDIR)
+	$(CPPC) $(DEPFLAGS) $(CFLAGS) -DPOSIX -DVERSION=\"${VERSION}\" -DDATADIR=\"${DATADIR}\" -c -o $@ $<
 
 	
 #Installing
@@ -48,15 +58,16 @@ install:  install-data install-bin
 
 
 install-data: all
-	rm $(DATADIR) -rf
-	rm $(DOCDIR) -rf
-	mkdir -p $(DOCDIR) $(DATADIR)/gfx $(DATADIR)/snd 
+	test -n "$(DATADIR)" && test "$(DATADIR)" != "/" && test "$(DATADIR)" != "/usr"
+	test -n "$(DOCDIR)" && test "$(DOCDIR)" != "/" && test "$(DOCDIR)" != "/usr"
+	rm -rf $(DATADIR)
+	rm -rf $(DOCDIR)
+	mkdir -p $(DOCDIR) $(DATADIR)/gfx $(DATADIR)/snd
 	cp data/gfx/* $(DATADIR)/gfx/
 	cp data/snd/* $(DATADIR)/snd/
 	cp data/*.svd $(DATADIR)/
 
 install-bin: all
-	rm $(DOCDIR) -rf
 	mkdir -p $(BINDIR) $(DOCDIR)
 	cp $(NAME) $(BINDIR)/
 	cp README FAQ manual.html manual.txt $(DOCDIR)/
@@ -71,8 +82,22 @@ uninstall:
 #Clean
 clean:
 	rm -f *.o
+	rm -f *.gcno *.gcda
+	rm -f *~
+	rm -f *.log
 	rm -f $(NAME)
 	rm -f $(NAME)-*
+	rm -f *.tar.gz
+	rm -f coverage.info
+	rm -f coverage_report.txt
+	rm -rf coverage_report/
+	rm -rf autom4te.cache/
+	-$(MAKE) -C tests clean
+
+check: test
+
+distclean: clean
+	rm -rf $(DEPDIR)
 
 #Making a binary package
 binary:
@@ -81,3 +106,37 @@ binary:
 
 dist:
 	git archive --prefix=$(NAME)-${VERSION}/ HEAD -o $(NAME)-${VERSION}.tar.gz
+
+#Testing
+test:
+	./run_tests.sh
+
+test-headless:
+	./run_tests.sh --headless
+
+test-quick:
+	./run_tests.sh --quick
+
+# Code coverage target
+coverage:
+	$(MAKE) clean
+	$(MAKE) CFLAGS="$(CFLAGS) --coverage -O0 -g" LIBS="$(LIBS) -lgcov"
+	@echo "Running tests with coverage..."
+	$(MAKE) -C tests clean
+	$(MAKE) -C tests CFLAGS="$(CFLAGS) --coverage -O0 -g" LIBS="$(LIBS) -lgcov"
+	./run_tests.sh
+	lcov --capture --directory . --output-file coverage.info
+	lcov --remove coverage.info '/usr/*' --output-file coverage.info
+	genhtml coverage.info --output-directory coverage_report
+	@echo "Coverage report generated in coverage_report/index.html"
+
+# Text-based coverage report
+coverage-text: coverage
+	@echo "\n=== COVERAGE SUMMARY ==="
+	lcov --summary coverage.info
+	@echo "\n=== DETAILED COVERAGE BY FILE ==="
+	lcov --list coverage.info > coverage_report.txt
+	@echo "Text coverage report saved to coverage_report.txt"
+
+# Include automatic dependencies
+include $(wildcard $(DEPDIR)/*.d)

@@ -6,30 +6,41 @@
 	If that file is not included with this source then permission is not given to use this source in any way whatsoever.
 */
 
+#include <csignal>
 #include <stdio.h>
+
 #include "alliance.h"
 #include "calc.h"
+#include "camera.h"
+#include "client.h"
+#include "database.h"
+#include "error.h"
+#include "frag.h"
+#include "game.h"
+#include "graphic.h"
+#include "interface.h"
+#include "os.h"
+#include "planet.h"
+#include "player.h"
+#include "presence.h"
 #include "server.h"
 #include "ship.h"
-#include "planet.h"
-#include "frag.h"
-#include "client.h"
 #include "ticker.h"
-#include "error.h"
-#include "interface.h"
-#include "camera.h"
-#include "presence.h"
-#include "graphic.h"
-#include "player.h"
-#include "database.h"
-#include "os.h"
-#include "game.h"
+
+static volatile bool shutdown_requested = false;
+
+static void signal_handler(int sig) {
+	shutdown_requested = true;
+}
 
 void game::runheadless() //Run as a headless server
 {
 	ticker lreg(24); //Loop regulator
 	int sdly; //Game saving delay
 
+	signal(SIGINT, signal_handler);
+	signal(SIGTERM, signal_handler);
+	
 	sdly=0;
 	lreg.start();
 	try
@@ -43,7 +54,7 @@ void game::runheadless() //Run as a headless server
 		{
 			alliance::maketerritories();
 		}
-		while(true)
+		while(!shutdown_requested)
 		{
 			server::cycle();
 			ship::simulateall();
@@ -58,6 +69,8 @@ void game::runheadless() //Run as a headless server
 			}
 			sdly--;
 		}
+		if(shutdown_requested)
+			throw error("Server shutdown requested");
 	}
 	catch(error it)
 	{
@@ -74,12 +87,12 @@ void game::runheadless() //Run as a headless server
 void game::runlocal()
 {
 	ticker lreg(24); //Loop regulator
-	int fdrp; //Frame drop rate
-	int fcnt; //Frame drop counter
+	int frame_drop_rate; //Frame drop rate
+	int frame_counter; //Frame drop counter
 
 	lreg.start();
-	fcnt=0;
-	fdrp=100;
+	frame_counter=0;
+	frame_drop_rate=100;
 	try
 	{
 		interface::printtomesg(NULL);
@@ -105,24 +118,20 @@ void game::runlocal()
 			presence::interpolateall();
 			client::poll();
 			camera::update();
-			fcnt+=100;
-			if(fcnt>=fdrp)
+			frame_counter+=100;
+			if(frame_counter>=frame_drop_rate)
 			{
-				fcnt-=fdrp;
+				frame_counter-=frame_drop_rate;
+				graphic::clean();
 				camera::render();
 				interface::render();
 				presence::render();
 				graphic::blit();
-				graphic::clean();
 			}
 			ship::simulateall();
 			frag::simulateall();
 			ship::behaveall();
 			planet::shipyards();
-/*			if(lreg.afps<23)
-				fdrp++;
-			if(lreg.afps>23.9 && fdrp>100)
-				fdrp--;*/
 		}
 	}
 	catch(error it)
@@ -148,12 +157,12 @@ void game::runlocal()
 void game::runclient(char* host)
 {
 	ticker lreg(25); //Loop regulator
-	int fdrp; //Frame drop rate
-	int fcnt; //Frame drop counter
+	int frame_drop_rate; //Frame drop rate
+	int frame_counter; //Frame drop counter
 
 	lreg.start();
-	fcnt=0;
-	fdrp=100;
+	frame_counter=0;
+	frame_drop_rate=100;
 	try
 	{
 		interface::printtomesg(NULL);
@@ -169,20 +178,20 @@ void game::runclient(char* host)
 			presence::interpolateall();
 			client::poll();
 			camera::update();
-			fcnt+=100;
-			if(fcnt>=fdrp)
+			frame_counter+=100;
+			if(frame_counter>=frame_drop_rate)
 			{
-				fcnt-=fdrp;
+				frame_counter-=frame_drop_rate;
+				graphic::clean();
 				camera::render();
 				interface::render();
 				presence::render();
 				graphic::blit();
-				graphic::clean();
 			}
 			if(lreg.afps<23)
-				fdrp++;
-			if(lreg.afps>23.9 && fdrp>100)
-				fdrp--;
+				frame_drop_rate++;
+			if(lreg.afps>23.9 && frame_drop_rate>100)
+				frame_drop_rate--;
 		}
 	}
 	catch(error it)
@@ -198,7 +207,10 @@ void game::runclient(char* host)
 
 void game::save()
 {
-	database::openwriter(os::openpersonal("universe.svd","w"));
+	FILE* f = os::openpersonal("universe.svd","w");
+	if(!f)
+		throw error("Cannot open universe.svd for writing");
+	database::openwriter(f);
 	planet::saveall();
 	ship::saveall();
 	frag::saveall();
@@ -208,7 +220,19 @@ void game::save()
 
 void game::load()
 {
-	database::openreader(os::openpersonal("universe.svd","r"));
+	FILE* f = os::openpersonal("universe.svd","r");
+	if(!f)
+		throw error("Cannot open universe.svd for reading");
+	// Check if file is empty or too small to be valid
+	fseek(f, 0, SEEK_END);
+	long size = ftell(f);
+	fseek(f, 0, SEEK_SET);
+	if(size < 10) // Minimum size for a valid database file
+	{
+		fclose(f);
+		throw error("Universe file is too small or empty");
+	}
+	database::openreader(f);
 	planet::loadall();
 	ship::loadall();
 	frag::loadall();

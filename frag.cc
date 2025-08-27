@@ -129,8 +129,11 @@ frag* frag::get(int indx)
 		return NULL;
 }
 
-void frag::netout(int typ,unsigned char* buf)
+void frag::serialize_to_network(int typ,unsigned char* buf)
 {
+	if(!buf)
+		return;
+	
 	buf[0]=typ;
 	buf+=1;
 
@@ -195,7 +198,7 @@ void frag::physics()
 		rot=(rot+3)%36;
 	if(trg && (typ==1 || typ==2))
 	{
-		if(trg->colldetect(loc,mov))
+		if(trg->detect_collision(loc,mov))
 		{
 			trg->hit(pow,loc,mov,own);
 			delete this;

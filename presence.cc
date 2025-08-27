@@ -169,16 +169,18 @@ void presence::controls()
 		client::action(CLIENT_TURN,-1);
 	if(interface::keys[SDLK_RIGHT])
 		client::action(CLIENT_TURN,+1);
-	if(interface::keys[SDLK_DOWN])
+	if(interface::keys[SDLK_DOWN]) {
 		if(interface::keys[SDLK_LSHIFT] || interface::keys[SDLK_RSHIFT])
 			client::action(CLIENT_ACCEL,-2);
 		else
 			client::action(CLIENT_ACCEL,-1);
-	if(interface::keys[SDLK_UP])
+	}
+	if(interface::keys[SDLK_UP]) {
 		if(interface::keys[SDLK_LSHIFT] || interface::keys[SDLK_RSHIFT])
 			client::action(CLIENT_ACCEL,+2);
 		else
 			client::action(CLIENT_ACCEL,+1);
+	}
 	if(!interface::inp)
 	{
 		if(interface::keys[SDLK_SPACE])
@@ -224,9 +226,6 @@ void presence::drawat(int sx,short sy,short zout)
 	long lx,ly; //Co-ordinates of 'link' presence
 	long thx,thy; //Thickness offsets
 	graphic* pspr; //Graphic for marking position while cloaked
-	int zm; //Zoom amount to use
-
-	zm=0;
 	if(spr)
 	{
 		rot=((ang+5)/10)%36;
@@ -355,7 +354,7 @@ presence* presence::gettarget(int typ,short dir,box cov,bool out,bool enem)
 		st=0;
 	for(int i=0;i<ISIZE;i++)
 	{
-		if(objs[st] && objs[st]!=me && objs[st]->typ==typ)
+		if(objs[st] && objs[st]!=me && objs[st]->typ==typ) {
 			if(
 			objs[st]->loc.x<cov.x2 &&
 			objs[st]->loc.x>cov.x1 &&		
@@ -371,6 +370,7 @@ presence* presence::gettarget(int typ,short dir,box cov,bool out,bool enem)
 				if(out && ((objs[st]->enem && enem) || !enem))
 					return objs[st];
 			}
+		}
 				
 		st=(st+dir);
 		if(st<0)

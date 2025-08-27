@@ -190,7 +190,9 @@ void graphic::clip(sbox* box)
 
 void graphic::pix(int x,short y,short col)
 {
-	fastPixelColor(screen,x,y,cols[col]);
+	Uint8 r,g,b;
+	SDL_GetRGB(cols[col],screen->format,&r,&g,&b);
+	pixelColor(screen,x,y,(r<<24)|(g<<16)|(b<<8)|0xFF);
 	if(nd<1024)
 	{
 		dtyp[nd]=DTYP_PIX;
@@ -215,7 +217,9 @@ void graphic::line(int x1,short y1,short x2,short y2,short col)
 {
 	if(col>=0 && col<16)
 	{
-		lineColor(screen,x1,y1,x2,y2,cols[col]);
+		Uint8 r,g,b;
+		SDL_GetRGB(cols[col],screen->format,&r,&g,&b);
+		lineColor(screen,x1,y1,x2,y2,(r<<24)|(g<<16)|(b<<8)|0xFF);
 		if(nd<1024)
 		{
 			dtyp[nd]=DTYP_LINE;
@@ -236,7 +240,7 @@ void graphic::draw(int x,short y,short rot,short zout,short haze,bool trg)
 
 	if(miss)
 	{
-		string("Graphic missing",x,y,true);
+		string(const_cast<char*>("Graphic missing"),x,y,true);
 	}
 	else
 	{
@@ -290,9 +294,6 @@ void graphic::embed()
 
 void graphic::clean()
 {
-	int j; //Loop limiter
-
-	j=nd;
 	SDL_SetClipRect(screen,NULL);
 	for(int i=0;i<nd;i++)
 	{
@@ -303,11 +304,19 @@ void graphic::clean()
 			break;
 			
 			case DTYP_PIX:
-			fastPixelColor(screen,dpos[i].x,dpos[i].y,cols[BLACK]);
+			{
+				Uint8 r,g,b;
+				SDL_GetRGB(cols[BLACK],screen->format,&r,&g,&b);
+				pixelColor(screen,dpos[i].x,dpos[i].y,(r<<24)|(g<<16)|(b<<8)|0xFF);
+			}
 			break;
 			
 			case DTYP_LINE:
-			lineColor(screen,dpos[i].x,dpos[i].y,dpos[i].w,dpos[i].h,cols[BLACK]);
+			{
+				Uint8 r,g,b;
+				SDL_GetRGB(cols[BLACK],screen->format,&r,&g,&b);
+				lineColor(screen,dpos[i].x,dpos[i].y,dpos[i].w,dpos[i].h,(r<<24)|(g<<16)|(b<<8)|0xFF);
+			}
 			break;
 		
 			case DTYP_RECT:
@@ -340,8 +349,9 @@ void graphic::load()
 	SDL_Surface* tmp; //Temporary holding place while sprites are converted
 	char* path; //Path to load sprite from
 
-	path=new char[strlen(DATADIR)+32];
-	sprintf(path,"%s/gfx/%i.bmp",DATADIR,self);
+	int path_len = strlen(DATADIR)+32;
+	path=new char[path_len];
+	snprintf(path,path_len,"%s/gfx/%i.bmp",DATADIR,self);
 	orig=SDL_LoadBMP(path);
 	delete[] path;
 	if(!orig)

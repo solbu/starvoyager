@@ -34,7 +34,7 @@ void sound::start()
 	want.samples=1024;
 	want.callback=sound::callback;
 	if(SDL_OpenAudio(&want,&spec)==-1)
-		on=false;
+		throw error(SDL_GetError());
 	else
 	{
 		on=true;

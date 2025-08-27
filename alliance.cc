@@ -151,7 +151,7 @@ void alliance::maketerritory(cord seed) //Generate the star systems for this all
 	cord lsys; //Star system location
 	cord lpln; //Location of planet
 	char snam[65]; //Name of system
-	char pnam[65]; //Name of planet
+	char pnam[80]; //Name of planet
 	int ptyp; //Type of planet
 
 	for(int i=0;i<nsys;i++)
@@ -178,7 +178,7 @@ void alliance::maketerritory(cord seed) //Generate the star systems for this all
 				else
 				{
 					ptyp=planet::UNINHABITED;
-					sprintf(pnam,"%s %hd",snam,j);
+					snprintf(pnam,sizeof(pnam),"%s %hd",snam,j);
 				}
 			}
 			try
